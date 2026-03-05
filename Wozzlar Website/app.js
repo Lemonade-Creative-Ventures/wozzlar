@@ -1788,6 +1788,7 @@ function startTour(){
   menu.classList.remove('show');
   hamburger.setAttribute('aria-expanded','false');
 
+  const isDay = document.body.classList.contains('day');
   const tg = new tourguide.TourGuideClient({
     steps: [
       {
@@ -1845,7 +1846,8 @@ function startTour(){
     prevLabel: "← Back",
     finishLabel: "Let's Play!",
     dialogMaxWidth: 360,
-    backdropColor: "rgba(0,0,0,0.78)",
+    backdropColor: isDay ? "rgba(15,18,32,0.45)" : "rgba(0,0,0,0.80)",
+    backdropClass: "wz-tour-backdrop",
     dialogClass: "wz-tour-dialog",
   });
 

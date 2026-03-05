@@ -270,7 +270,7 @@
 
   /* ===== TourGuide.js custom theme ===== */
   /* Dark background, game-branded colors, matching fonts & radii */
-  .wz-tour-dialog.tg-dialog {
+  .wz-tour-dialog {
     background: linear-gradient(180deg, rgba(21,21,40,.99) 0%, rgba(14,14,26,.99) 100%) !important;
     border: 1px solid rgba(63,203,255,.22) !important;
     border-radius: 14px !important;
@@ -278,7 +278,7 @@
     color: #ffffff !important;
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif !important;
   }
-  body.day .wz-tour-dialog.tg-dialog {
+  body.day .wz-tour-dialog {
     background: linear-gradient(180deg, #ffffff 0%, #f4f5fb 100%) !important;
     border-color: rgba(15,18,32,.14) !important;
     box-shadow: 0 20px 60px rgba(15,18,32,.18) !important;
@@ -286,90 +286,90 @@
   }
 
   /* Header */
-  .wz-tour-dialog.tg-dialog .tg-dialog-header {
+  .wz-tour-dialog .tg-dialog-header {
     padding-bottom: 6px !important;
     border-bottom: 1px solid rgba(63,203,255,.18) !important;
   }
-  body.day .wz-tour-dialog.tg-dialog .tg-dialog-header {
+  body.day .wz-tour-dialog .tg-dialog-header {
     border-color: rgba(15,18,32,.10) !important;
   }
 
   /* Title - use game's serif font in pink */
-  .wz-tour-dialog.tg-dialog .tg-dialog-title {
+  .wz-tour-dialog .tg-dialog-title {
     font-family: "Uncial Antiqua", ui-serif, Georgia, serif !important;
     color: #ffd1e6 !important;
     font-size: 1.05rem !important;
     letter-spacing: .03em !important;
   }
-  body.day .wz-tour-dialog.tg-dialog .tg-dialog-title {
+  body.day .wz-tour-dialog .tg-dialog-title {
     color: #b0185e !important;
   }
 
   /* Close button */
-  .wz-tour-dialog.tg-dialog .tg-dialog-close-btn {
+  .wz-tour-dialog .tg-dialog-close-btn {
     opacity: .5 !important;
     filter: invert(1) !important;
   }
-  body.day .wz-tour-dialog.tg-dialog .tg-dialog-close-btn {
+  body.day .wz-tour-dialog .tg-dialog-close-btn {
     filter: none !important;
     opacity: .4 !important;
   }
-  .wz-tour-dialog.tg-dialog .tg-dialog-close-btn:hover {
+  .wz-tour-dialog .tg-dialog-close-btn:hover {
     opacity: 1 !important;
   }
 
   /* Body text */
-  .wz-tour-dialog.tg-dialog .tg-dialog-body {
+  .wz-tour-dialog .tg-dialog-body {
     color: rgba(255,255,255,.92) !important;
     font-size: .95rem !important;
     line-height: 1.55 !important;
   }
-  body.day .wz-tour-dialog.tg-dialog .tg-dialog-body {
+  body.day .wz-tour-dialog .tg-dialog-body {
     color: var(--text) !important;
   }
 
   /* Progress bar line */
-  .wz-tour-dialog.tg-dialog .tg-dialog-progress-bar {
+  .wz-tour-dialog .tg-dialog-progress-bar {
     background: rgba(63,203,255,.15) !important;
   }
-  .wz-tour-dialog.tg-dialog .tg-dialog-progress-bar > .tg-bar {
+  .wz-tour-dialog .tg-dialog-progress-bar > .tg-bar {
     background: var(--near) !important;
   }
 
   /* Step dots */
-  .wz-tour-dialog.tg-dialog .tg-dot {
+  .wz-tour-dialog .tg-dot {
     background: rgba(255,255,255,.2) !important;
   }
-  body.day .wz-tour-dialog.tg-dialog .tg-dot {
+  body.day .wz-tour-dialog .tg-dot {
     background: rgba(15,18,32,.18) !important;
   }
-  .wz-tour-dialog.tg-dialog .tg-dot.tg-dot-active {
+  .wz-tour-dialog .tg-dot.tg-dot-active {
     background: var(--hit) !important;
   }
 
   /* Step progress text (1/10) */
-  .wz-tour-dialog.tg-dialog .tg-step-progress {
+  .wz-tour-dialog .tg-step-progress {
     color: rgba(255,255,255,.45) !important;
   }
-  body.day .wz-tour-dialog.tg-dialog .tg-step-progress {
+  body.day .wz-tour-dialog .tg-step-progress {
     color: rgba(15,18,32,.45) !important;
   }
 
   /* Footer */
-  .wz-tour-dialog.tg-dialog .tg-dialog-footer {
+  .wz-tour-dialog .tg-dialog-footer {
     border-top: 1px solid rgba(63,203,255,.18) !important;
   }
-  body.day .wz-tour-dialog.tg-dialog .tg-dialog-footer {
+  body.day .wz-tour-dialog .tg-dialog-footer {
     border-color: rgba(15,18,32,.10) !important;
   }
 
   /* Dots divider lines in footer */
-  .wz-tour-dialog.tg-dialog .tg-dialog-dots {
+  .wz-tour-dialog .tg-dialog-dots {
     border-color: rgba(63,203,255,.15) !important;
   }
 
   /* Buttons: prev/next/finish */
-  .wz-tour-dialog.tg-dialog .tg-dialog-btn {
+  .wz-tour-dialog .tg-dialog-btn {
     padding: 7px 16px !important;
     border-radius: 10px !important;
     font-weight: 700 !important;
@@ -379,49 +379,48 @@
     color: rgba(255,255,255,.85) !important;
     transition: background .15s, border-color .15s !important;
   }
-  body.day .wz-tour-dialog.tg-dialog .tg-dialog-btn {
+  body.day .wz-tour-dialog .tg-dialog-btn {
     background: #ffffff !important;
     border-color: rgba(15,18,32,.16) !important;
     color: var(--text) !important;
   }
-  .wz-tour-dialog.tg-dialog .tg-dialog-btn:hover {
+  .wz-tour-dialog .tg-dialog-btn:hover {
     background: rgba(63,203,255,.12) !important;
     border-color: var(--near) !important;
     color: #fff !important;
   }
-  body.day .wz-tour-dialog.tg-dialog .tg-dialog-btn:hover {
+  body.day .wz-tour-dialog .tg-dialog-btn:hover {
     background: rgba(31,111,253,.08) !important;
     border-color: rgba(31,111,253,.40) !important;
     color: var(--text) !important;
   }
   /* Last button (Next / Finish) gets the pink primary style */
-  .wz-tour-dialog.tg-dialog .tg-dialog-btn + .tg-dialog-btn {
+  .wz-tour-dialog .tg-dialog-btn:last-child {
     background: var(--hit) !important;
     color: #120513 !important;
     border-color: #ff4fa3 !important;
   }
-  .wz-tour-dialog.tg-dialog .tg-dialog-btn + .tg-dialog-btn:hover {
+  .wz-tour-dialog .tg-dialog-btn:last-child:hover {
     background: #ff79ba !important;
     border-color: #ff79ba !important;
     color: #120513 !important;
   }
-  .wz-tour-dialog.tg-dialog .tg-dialog-btn.disabled {
+  .wz-tour-dialog .tg-dialog-btn.disabled {
     opacity: .38 !important;
   }
 
   /* Arrow pointer on dialog */
-  .wz-tour-dialog.tg-dialog .tg-arrow {
+  .wz-tour-dialog .tg-arrow {
     background: rgba(21,21,40,.99) !important;
     border: 1px solid rgba(63,203,255,.22) !important;
   }
-  body.day .wz-tour-dialog.tg-dialog .tg-arrow {
+  body.day .wz-tour-dialog .tg-arrow {
     background: #f4f5fb !important;
     border-color: rgba(15,18,32,.14) !important;
   }
 
   /* Backdrop / target highlight ring */
-  .tg-backdrop {
-    box-shadow: #ff4fa3 0 0 0 3px, rgba(0,0,0,0.78) 0 0 0 1000vh !important;
-    border-color: #ff4fa3 !important;
-    border-radius: 10px !important;
+  .wz-tour-backdrop {
+    border: 2px solid rgba(255,79,163,.65) !important;
+    border-radius: 12px !important;
   }
