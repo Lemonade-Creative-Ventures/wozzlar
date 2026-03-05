@@ -343,6 +343,9 @@ const PRACTICE_PUZZLES = [
   { theme: "Holiday", words: ["WARM", "UP", "WITH", "HOT", "COCOA"] },
 ];
 
+/* Tour puzzle for interactive walkthrough */
+const TOUR_PUZZLE = { theme: "Magic", words: ["WORD","WIZARD"] };
+
 /* Kept: old anchor-based numbering as fallback only */
 const START_ANCHOR = new Date(2025, 10, 3);
 const now = new Date();
@@ -410,7 +413,7 @@ function todayKey(){
   return `wozzlar_daily_${y}-${m}-${day}`;
 }
 function saveDailyState(){
-  if(state.isPractice) return;
+  if(state.isPractice || _inTourMode) return;
   const payload = {
     puzzleNumber: currentPuzzleNumber(),
     words: state.words,
@@ -1186,6 +1189,9 @@ function clearStatsBlocks(){
 }
 
 function showCompletionOverlay(fromAllIn){
+  // Don't show completion modal during tour mode
+  if(_inTourMode) return;
+  
   setModalCloseCancelsAllIn(false);
   const solvedIn = `${state.guessCount}/${TOTAL_GUESS_LIMIT}`;
   modalTitle.textContent = `Wozzlar — ${state.numberLabel} • ${solvedIn}`;
@@ -1780,6 +1786,55 @@ function showHowToPlay(){
 
 /* ===== TOUR GUIDE ===== */
 let _tgInstance = null;
+let _tourState = null; // Stores daily puzzle state during tour
+let _inTourMode = false; // Flag to track if we're in tour mode
+
+function saveTourState(){
+  // Save the current daily puzzle state before entering tour
+  _tourState = {
+    savedState: JSON.parse(JSON.stringify(state)),
+    savedDaily: localStorage.getItem(todayKey())
+  };
+}
+
+function restoreTourState(){
+  // Restore the daily puzzle state after tour
+  if(_tourState){
+    state = _tourState.savedState;
+    if(_tourState.savedDaily){
+      localStorage.setItem(todayKey(), _tourState.savedDaily);
+    }
+    _tourState = null;
+    _inTourMode = false;
+    rebuildUIFromState();
+    renderKeyCounters();
+    paintRows();
+    updateControlsState();
+  }
+}
+
+function loadTourPuzzle(){
+  // Initialize game with the WORD WIZARD puzzle for the tour
+  const puz = TOUR_PUZZLE;
+  state = baseState(puz, "Tour", null);
+  state.words.forEach((w, wi) => {
+    w.split('').forEach(c => {
+      if(/[A-Z]/.test(c)){
+        state.inPhrase.add(c);
+        (state.wordsContaining[c] ||= new Set()).add(wi);
+      }
+    });
+  });
+  state.solvedWord = state.words.map(()=> false);
+  state.locks  = state.words.map(w => Array.from({length:w.length}, ()=> null));
+  state.entries= state.words.map(w => Array.from({length:w.length}, ()=> ''));
+  state.flowIndex = state.words.map(()=>0);
+  state.persistentNear = state.words.map(w => Array.from({length:w.length},()=>false));
+  _inTourMode = true;
+  setBadge('none');
+  rebuildUIFromState();
+  renderKeyCounters();
+}
 
 function startTour(){
   if(typeof tourguide === 'undefined' || !tourguide.TourGuideClient){
@@ -1790,49 +1845,66 @@ function startTour(){
   menu.classList.remove('show');
   hamburger.setAttribute('aria-expanded','false');
 
-  // Create the instance once; re-use it on subsequent calls to avoid duplicate
-  // backdrop/dialog DOM nodes and the completeOnFinish localStorage block.
-  if(!_tgInstance){
-    _tgInstance = new tourguide.TourGuideClient({
+  // Save current state and load tour puzzle
+  saveTourState();
+  loadTourPuzzle();
+
+  // Recreate the instance every time to ensure fresh tour state
+  _tgInstance = new tourguide.TourGuideClient({
       steps: [
         {
           title: "Welcome to Wozzlar! 🧙‍♂️",
-          content: "Guess today's hidden phrase, word by word, before you run out of tries. Let's walk through the basics!",
+          content: "Let's learn by playing! We'll solve \"WORD WIZARD\" together. Guess the hidden phrase, word by word, before you run out of tries.",
         },
         {
           target: "#phrase",
-          title: "Today's Phrase",
-          content: "The puzzle is a multi-word phrase. Each row is one word you need to solve. Click or tap any row to make it the active word you're working on.",
+          title: "The Puzzle 🎯",
+          content: "Here's our practice phrase: <strong>WORD WIZARD</strong>. Each row is one word you need to solve. The first word \"WORD\" is already selected (highlighted). Let's start!",
         },
         {
           target: "#kb",
-          title: "The Keyboard ⌨️",
-          content: "Tap letters on the on-screen keyboard — or just type on your physical keyboard — to fill in your guess for the active word. Then press <strong>ENTER</strong> to submit.",
+          title: "Make Your First Guess 🔤",
+          content: "Let's try guessing <strong>WARM</strong> for the first word. Type <strong>W-A-R-M</strong> using your keyboard or the on-screen keys, then press <strong>ENTER</strong> to submit. Click <strong>Next</strong> after you submit.",
         },
         {
           target: "#phrase",
-          title: "Tile Colors After a Guess 🎨",
-          content: "<span style='color:#FF4FA3;font-weight:800'>Pink = HIT</span> — right letter, right spot!<br><span style='color:#3FCBFF;font-weight:800'>Blue = NEAR</span> — letter is in the phrase, just wrong position. Blue tiles stay blue until that spot is solved.<br><strong>Dark = MISS</strong> — not in the phrase at all.",
+          title: "Understanding the Colors 🎨",
+          content: "Great! Now you see the colors:<br><span style='color:#FF4FA3;font-weight:800'>Pink = HIT</span> — right letter, right spot!<br><span style='color:#3FCBFF;font-weight:800'>Blue = NEAR</span> — letter is in the phrase, just wrong position.<br><strong>Dark = MISS</strong> — not in the phrase at all.<br><br>Notice the <strong>W</strong> is pink (correct!) and <strong>R</strong> is blue (in the word, wrong spot).",
         },
         {
           target: "#kb",
-          title: "Keyboard Colors 🔑",
-          content: "<span style='color:#FF4FA3;font-weight:800'>Pink</span> key = placed correctly somewhere. <span style='color:#3FCBFF;font-weight:800'>Blue</span> key = exists in the phrase (wrong spot). <strong>Dark</strong> key = not in the phrase (it disappears!). A pink key with tiny blue squares shows how many more of that letter are still hiding.",
+          title: "Try Again! 💡",
+          content: "The <strong>W</strong> is correct at position 1, and <strong>R</strong> is in the word but wrong spot. Let's try <strong>WORD</strong>. Type it and press <strong>ENTER</strong>. Click <strong>Next</strong> after you submit.",
+        },
+        {
+          target: "#phrase",
+          title: "Word Solved! ✨",
+          content: "Perfect! All letters are pink — you solved \"WORD\"! The game automatically moves to the next word. Now let's solve \"WIZARD\".",
+        },
+        {
+          target: "#phrase",
+          title: "Side Hints 📜",
+          content: "Your previous guesses appear as small tags on the left. <u>Underlined letters</u> mean the letter belongs in that word but in a different position. Use these hints!",
+        },
+        {
+          target: "#kb",
+          title: "Solve the Second Word 🔮",
+          content: "For \"WIZARD\", try <strong>LIZARD</strong>. Type it and press <strong>ENTER</strong> to see what matches! Click <strong>Next</strong> after you submit.",
+        },
+        {
+          target: "#phrase",
+          title: "Almost There! 🎪",
+          content: "Notice the letters that matched! Now try <strong>WIZARD</strong> to complete the puzzle. Type it and press <strong>ENTER</strong>. Click <strong>Next</strong> after you submit.",
+        },
+        {
+          target: ".nav-left",
+          title: "Guesses & Badges 🏅",
+          content: "You get <strong>7 guesses</strong> per day. Solve in time → 🏆 Wozzlar. Need more → 😐 Womp. Complete daily puzzles to build your win streak!",
         },
         {
           target: "#btnSolve",
           title: "ALL IN Mode 🎯",
           content: "Feeling confident? Press <strong>ALL IN</strong> to fill in the entire phrase at once — it counts as one guess. Get it right and earn a 🏆 Wozzlar badge. Miss it, and you'll get a 🎺 Super Womp!",
-        },
-        {
-          target: "#phrase",
-          title: "Side Hints 📜",
-          content: "Your previous guesses appear as small tags to the left of each word. <u>Underlined letters</u> are in that word but in a different position — use them to narrow down your next guess!",
-        },
-        {
-          target: ".nav-left",
-          title: "Guesses & Badges 🏅",
-          content: "You get <strong>7 guesses</strong> per day. Solve in time → 🏆 Wozzlar. Need more → 😐 Womp. Miss an ALL IN → 🎺 Super Womp. Complete daily puzzles to build your win streak!",
         },
         {
           target: "#btnPractice",
@@ -1854,17 +1926,17 @@ function startTour(){
       dialogClass: "wz-tour-dialog",
     });
 
-    _tgInstance.onAfterExit(() => {
-      try{ localStorage.setItem('wozzlar_tour_seen_v1','1'); }catch(e){ console.warn('wozzlar: could not save tour state', e); }
-    });
-  }
+  _tgInstance.onAfterExit(() => {
+    // Restore daily puzzle when tour exits
+    restoreTourState();
+    try{ localStorage.setItem('wozzlar_tour_seen_v1','1'); }catch(e){ console.warn('wozzlar: could not save tour state', e); }
+  });
 
   // Sync backdrop color with the current day/night theme each time the tour starts.
   const isDay = document.body.classList.contains('day');
   _tgInstance.setOptions({ backdropColor: isDay ? "rgba(15,18,32,0.45)" : "rgba(0,0,0,0.80)" });
 
-  // Clear the "finished" flag so the tour always restarts from step 0.
-  _tgInstance.deleteFinishedTour('all');
+  // Start the tour
   _tgInstance.start();
 }
 
