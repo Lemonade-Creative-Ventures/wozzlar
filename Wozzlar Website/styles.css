@@ -269,112 +269,159 @@
   .share-btn.disabled{ opacity:0.45; pointer-events:none; }
 
   /* ===== TourGuide.js custom theme ===== */
-  .tg-dialog {
-    background: linear-gradient(180deg, rgba(21,21,40,.98), rgba(14,14,26,.98)) !important;
-    border: 1px solid rgba(42,42,68,.95) !important;
+  /* Dark background, game-branded colors, matching fonts & radii */
+  .wz-tour-dialog.tg-dialog {
+    background: linear-gradient(180deg, rgba(21,21,40,.99) 0%, rgba(14,14,26,.99) 100%) !important;
+    border: 1px solid rgba(63,203,255,.22) !important;
     border-radius: 14px !important;
-    box-shadow: 0 20px 60px #0008 !important;
-    color: var(--text) !important;
+    box-shadow: 0 24px 64px rgba(0,0,0,.7), 0 0 0 1px rgba(63,203,255,.08) !important;
+    color: #ffffff !important;
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif !important;
-    max-width: min(360px, 90vw) !important;
   }
-  body.day .tg-dialog {
-    background: linear-gradient(180deg, #ffffff, #f4f5fb) !important;
+  body.day .wz-tour-dialog.tg-dialog {
+    background: linear-gradient(180deg, #ffffff 0%, #f4f5fb 100%) !important;
     border-color: rgba(15,18,32,.14) !important;
-    box-shadow: 0 20px 60px rgba(15,18,32,.16) !important;
+    box-shadow: 0 20px 60px rgba(15,18,32,.18) !important;
+    color: var(--text) !important;
   }
 
-  .tg-dialog .tg-dialog-header {
-    border-bottom: 1px solid rgba(42,42,68,.7) !important;
-    padding-bottom: 10px !important;
+  /* Header */
+  .wz-tour-dialog.tg-dialog .tg-dialog-header {
+    padding-bottom: 6px !important;
+    border-bottom: 1px solid rgba(63,203,255,.18) !important;
   }
-  body.day .tg-dialog .tg-dialog-header {
-    border-color: rgba(15,18,32,.12) !important;
+  body.day .wz-tour-dialog.tg-dialog .tg-dialog-header {
+    border-color: rgba(15,18,32,.10) !important;
   }
 
-  .tg-dialog .tg-dialog-title,
-  .tg-dialog [class*="title"] {
+  /* Title - use game's serif font in pink */
+  .wz-tour-dialog.tg-dialog .tg-dialog-title {
     font-family: "Uncial Antiqua", ui-serif, Georgia, serif !important;
     color: #ffd1e6 !important;
     font-size: 1.05rem !important;
-    letter-spacing: .02em !important;
+    letter-spacing: .03em !important;
   }
-  body.day .tg-dialog .tg-dialog-title,
-  body.day .tg-dialog [class*="title"] {
+  body.day .wz-tour-dialog.tg-dialog .tg-dialog-title {
     color: #b0185e !important;
   }
 
-  .tg-dialog .tg-dialog-body,
-  .tg-dialog [class*="body"] {
+  /* Close button */
+  .wz-tour-dialog.tg-dialog .tg-dialog-close-btn {
+    opacity: .5 !important;
+    filter: invert(1) !important;
+  }
+  body.day .wz-tour-dialog.tg-dialog .tg-dialog-close-btn {
+    filter: none !important;
+    opacity: .4 !important;
+  }
+  .wz-tour-dialog.tg-dialog .tg-dialog-close-btn:hover {
+    opacity: 1 !important;
+  }
+
+  /* Body text */
+  .wz-tour-dialog.tg-dialog .tg-dialog-body {
+    color: rgba(255,255,255,.92) !important;
+    font-size: .95rem !important;
+    line-height: 1.55 !important;
+  }
+  body.day .wz-tour-dialog.tg-dialog .tg-dialog-body {
     color: var(--text) !important;
-    font-size: .97rem !important;
-    line-height: 1.5 !important;
   }
 
-  .tg-dialog .tg-dialog-footer {
-    border-top: 1px solid rgba(42,42,68,.7) !important;
-    padding-top: 10px !important;
+  /* Progress bar line */
+  .wz-tour-dialog.tg-dialog .tg-dialog-progress-bar {
+    background: rgba(63,203,255,.15) !important;
   }
-  body.day .tg-dialog .tg-dialog-footer {
-    border-color: rgba(15,18,32,.12) !important;
+  .wz-tour-dialog.tg-dialog .tg-dialog-progress-bar > .tg-bar {
+    background: var(--near) !important;
   }
 
-  .tg-dialog .tg-btn {
-    height: 36px !important;
-    padding: 0 14px !important;
+  /* Step dots */
+  .wz-tour-dialog.tg-dialog .tg-dot {
+    background: rgba(255,255,255,.2) !important;
+  }
+  body.day .wz-tour-dialog.tg-dialog .tg-dot {
+    background: rgba(15,18,32,.18) !important;
+  }
+  .wz-tour-dialog.tg-dialog .tg-dot.tg-dot-active {
+    background: var(--hit) !important;
+  }
+
+  /* Step progress text (1/10) */
+  .wz-tour-dialog.tg-dialog .tg-step-progress {
+    color: rgba(255,255,255,.45) !important;
+  }
+  body.day .wz-tour-dialog.tg-dialog .tg-step-progress {
+    color: rgba(15,18,32,.45) !important;
+  }
+
+  /* Footer */
+  .wz-tour-dialog.tg-dialog .tg-dialog-footer {
+    border-top: 1px solid rgba(63,203,255,.18) !important;
+  }
+  body.day .wz-tour-dialog.tg-dialog .tg-dialog-footer {
+    border-color: rgba(15,18,32,.10) !important;
+  }
+
+  /* Dots divider lines in footer */
+  .wz-tour-dialog.tg-dialog .tg-dialog-dots {
+    border-color: rgba(63,203,255,.15) !important;
+  }
+
+  /* Buttons: prev/next/finish */
+  .wz-tour-dialog.tg-dialog .tg-dialog-btn {
+    padding: 7px 16px !important;
     border-radius: 10px !important;
-    cursor: pointer !important;
     font-weight: 700 !important;
-    font-size: .9rem !important;
-    border: 1px solid rgba(42,42,63,.85) !important;
-    background: rgba(22,22,38,.92) !important;
+    font-size: .88rem !important;
+    border: 1px solid rgba(63,203,255,.28) !important;
+    background: rgba(14,14,26,.9) !important;
+    color: rgba(255,255,255,.85) !important;
+    transition: background .15s, border-color .15s !important;
+  }
+  body.day .wz-tour-dialog.tg-dialog .tg-dialog-btn {
+    background: #ffffff !important;
+    border-color: rgba(15,18,32,.16) !important;
     color: var(--text) !important;
   }
-  body.day .tg-dialog .tg-btn {
-    background: #fff !important;
-    border-color: rgba(15,18,32,.14) !important;
+  .wz-tour-dialog.tg-dialog .tg-dialog-btn:hover {
+    background: rgba(63,203,255,.12) !important;
+    border-color: var(--near) !important;
+    color: #fff !important;
+  }
+  body.day .wz-tour-dialog.tg-dialog .tg-dialog-btn:hover {
+    background: rgba(31,111,253,.08) !important;
+    border-color: rgba(31,111,253,.40) !important;
     color: var(--text) !important;
   }
-  .tg-dialog .tg-btn-primary {
+  /* Last button (Next / Finish) gets the pink primary style */
+  .wz-tour-dialog.tg-dialog .tg-dialog-btn + .tg-dialog-btn {
     background: var(--hit) !important;
     color: #120513 !important;
     border-color: #ff4fa3 !important;
   }
-
-  .tg-dialog .tg-close-btn,
-  .tg-dialog [class*="close"] {
-    color: rgba(255,255,255,.45) !important;
-    background: transparent !important;
-    border: none !important;
+  .wz-tour-dialog.tg-dialog .tg-dialog-btn + .tg-dialog-btn:hover {
+    background: #ff79ba !important;
+    border-color: #ff79ba !important;
+    color: #120513 !important;
   }
-  body.day .tg-dialog .tg-close-btn,
-  body.day .tg-dialog [class*="close"] {
-    color: rgba(15,18,32,.40) !important;
-  }
-  .tg-dialog .tg-close-btn:hover,
-  .tg-dialog [class*="close"]:hover {
-    color: var(--text) !important;
+  .wz-tour-dialog.tg-dialog .tg-dialog-btn.disabled {
+    opacity: .38 !important;
   }
 
+  /* Arrow pointer on dialog */
+  .wz-tour-dialog.tg-dialog .tg-arrow {
+    background: rgba(21,21,40,.99) !important;
+    border: 1px solid rgba(63,203,255,.22) !important;
+  }
+  body.day .wz-tour-dialog.tg-dialog .tg-arrow {
+    background: #f4f5fb !important;
+    border-color: rgba(15,18,32,.14) !important;
+  }
+
+  /* Backdrop / target highlight ring */
   .tg-backdrop {
-    background: rgba(0,0,0,.72) !important;
-  }
-  body.day .tg-backdrop {
-    background: rgba(15,18,32,.40) !important;
-  }
-
-  /* Step counter (X of Y) */
-  .tg-dialog [class*="step"] [class*="counter"],
-  .tg-dialog [class*="counter"] {
-    color: rgba(255,255,255,.5) !important;
-    font-size: .85rem !important;
-  }
-  body.day .tg-dialog [class*="counter"] {
-    color: rgba(15,18,32,.50) !important;
-  }
-
-  /* Target highlight ring */
-  .tg-target-highlighted {
-    box-shadow: 0 0 0 4px #ff4fa355, 0 0 0 8px #ff4fa322 !important;
-    border-radius: var(--radius, 10px) !important;
+    box-shadow: #ff4fa3 0 0 0 3px, rgba(0,0,0,0.78) 0 0 0 1000vh !important;
+    border-color: #ff4fa3 !important;
+    border-radius: 10px !important;
   }

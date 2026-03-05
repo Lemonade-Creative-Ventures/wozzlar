@@ -1780,7 +1780,7 @@ function showHowToPlay(){
 
 /* ===== TOUR GUIDE ===== */
 function startTour(){
-  if(typeof TourGuide === 'undefined'){
+  if(typeof tourguide === 'undefined' || !tourguide.TourGuideClient){
     showInfoModal("The tour guide couldn't load. Check your connection and try again.");
     return;
   }
@@ -1788,7 +1788,7 @@ function startTour(){
   menu.classList.remove('show');
   hamburger.setAttribute('aria-expanded','false');
 
-  const tg = new TourGuide({
+  const tg = new tourguide.TourGuideClient({
     steps: [
       {
         title: "Welcome to Wozzlar! 🧙‍♂️",
@@ -1840,14 +1840,17 @@ function startTour(){
       },
     ],
     debug: false,
-    exitOnBackdropClick: false,
+    exitOnClickOutside: false,
     nextLabel: "Next →",
     prevLabel: "← Back",
     finishLabel: "Let's Play!",
-    skipLabel: "Skip",
-    onAfterExit: () => {
-      try{ localStorage.setItem('wozzlar_tour_seen_v1','1'); }catch(e){ console.warn('wozzlar: could not save tour state', e); }
-    },
+    dialogMaxWidth: 360,
+    backdropColor: "rgba(0,0,0,0.78)",
+    dialogClass: "wz-tour-dialog",
+  });
+
+  tg.onAfterExit(() => {
+    try{ localStorage.setItem('wozzlar_tour_seen_v1','1'); }catch(e){ console.warn('wozzlar: could not save tour state', e); }
   });
 
   tg.start();
