@@ -1905,9 +1905,9 @@ function startTour(){
           content: "See the colors?<br><span style='color:#FF4FA3;font-weight:800'>■ Pink</span> = Right spot<br><span style='color:#3FCBFF;font-weight:800'>■ Blue</span> = Wrong spot<br><strong>■ Dark</strong> = Not in word",
         },
         {
-          target: "#phrase .side-tags",
+          target: "#phrase",
           title: "Step 6",
-          content: "Look left! Your guess shows here. <u>Underlined letters</u> = wrong position.",
+          content: "Look left! Your guess shows here. <em>Underlined letters</em> = wrong position.",
         },
         {
           target: "#kb",

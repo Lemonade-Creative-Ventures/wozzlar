@@ -424,3 +424,14 @@
     border: 2px solid rgba(255,79,163,.65) !important;
     border-radius: 12px !important;
   }
+
+  /* Tour highlight for specific elements */
+  .tour-highlight {
+    animation: tour-pulse 1.5s ease-in-out infinite;
+    box-shadow: 0 0 0 4px rgba(255,79,163,.4) !important;
+  }
+  
+  @keyframes tour-pulse {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(255,79,163,.4); }
+    50% { box-shadow: 0 0 0 8px rgba(255,79,163,.6); }
+  }
