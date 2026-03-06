@@ -435,3 +435,11 @@
     0%, 100% { box-shadow: 0 0 0 4px rgba(255,79,163,.4); }
     50% { box-shadow: 0 0 0 8px rgba(255,79,163,.6); }
   }
+  
+  /* Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .tour-highlight {
+      animation: none;
+      box-shadow: 0 0 0 4px rgba(255,79,163,.6) !important;
+    }
+  }

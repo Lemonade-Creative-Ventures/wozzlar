@@ -1877,7 +1877,7 @@ function startTour(){
       steps: [
         {
           title: "Welcome! 🧙‍♂️",
-          content: "Let's play together! I'll guide you step by step.",
+          content: "Let's play together! This quick tour takes 2-3 minutes.",
         },
         {
           target: "#phrase",
@@ -1887,22 +1887,22 @@ function startTour(){
         {
           target: "#phrase",
           title: "Step 2",
-          content: "<strong>Try it:</strong> Click the second word row to select it.",
+          content: "<strong>Try it:</strong> Click the second word row to select it.<br>(Then click Next)",
         },
         {
           target: "#phrase",
           title: "Step 3",
-          content: "Good! You can work on any word. <strong>Now click the first word</strong> to continue.",
+          content: "Good! You can work on any word. <strong>Now click the first word</strong> to continue.<br>(Then click Next)",
         },
         {
           target: "#kb",
           title: "Step 4",
-          content: "<strong>Type this:</strong> <strong>WARM</strong><br>Then press <strong>ENTER</strong>",
+          content: "<strong>Type this:</strong> <strong>WARM</strong><br>Then press <strong>ENTER</strong><br>(Then click Next)",
         },
         {
           target: "#phrase",
           title: "Step 5",
-          content: "See the colors?<br><span style='color:#FF4FA3;font-weight:800'>■ Pink</span> = Right spot<br><span style='color:#3FCBFF;font-weight:800'>■ Blue</span> = Wrong spot<br><strong>■ Dark</strong> = Not in word",
+          content: "See the colors?<br><span style='color:#FF4FA3;font-weight:800'>■ Pink</span> = Correct spot<br><span style='color:#3FCBFF;font-weight:800'>■ Blue</span> = Wrong spot<br><strong>■ Dark</strong> = Not in word",
         },
         {
           target: "#phrase",
@@ -1917,7 +1917,7 @@ function startTour(){
         {
           target: "#kb",
           title: "Step 8",
-          content: "<strong>Type this:</strong> <strong>WORD</strong><br>Then press <strong>ENTER</strong>",
+          content: "<strong>Type this:</strong> <strong>WORD</strong><br>Then press <strong>ENTER</strong><br>(Then click Next)",
         },
         {
           target: "#phrase",
@@ -1927,12 +1927,12 @@ function startTour(){
         {
           target: "#phrase",
           title: "Step 10",
-          content: "<strong>Type this:</strong> <strong>LIZARD</strong><br>Then press <strong>ENTER</strong>",
+          content: "<strong>Type this:</strong> <strong>LIZARD</strong><br>Then press <strong>ENTER</strong><br>(Then click Next)",
         },
         {
           target: "#phrase",
           title: "Step 11",
-          content: "See which letters matched?<br><strong>Now type:</strong> <strong>WIZARD</strong> and press <strong>ENTER</strong>",
+          content: "See which letters matched?<br><strong>Now type:</strong> <strong>WIZARD</strong> and press <strong>ENTER</strong><br>(Then click Next)",
         },
         {
           target: "#phrase",
