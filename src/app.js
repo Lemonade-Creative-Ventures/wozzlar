@@ -1646,6 +1646,14 @@ howToPlayLink.addEventListener('click', (e)=>{
 /* ===== Add to Home Screen ===== */
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const INSTALL_PROMPT_DISMISS_DAYS = 7;
+const INSTALL_PROMPT_DELAY_MS = 2000;
+
+// Platform-specific install messages
+const INSTALL_MESSAGES = {
+  ios: "Install this app on your iPhone for easy access: tap Share ⬆️ and then 'Add to Home Screen'.",
+  android: "Install this app for easy access: tap the menu (⋮) and then 'Install app' or 'Add to Home screen'.",
+  generic: "Add this app to your home screen for quick access."
+};
 
 let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -1744,22 +1752,22 @@ function showInstallPrompt() {
   if (isIOSDevice) {
     installPrompt.classList.add('ios');
     installPromptTitle.textContent = 'Install Wozzlar';
-    installPromptMessage.textContent = "Install this app on your iPhone for easy access: tap Share ⬆️ and then 'Add to Home Screen'.";
+    installPromptMessage.textContent = INSTALL_MESSAGES.ios;
   } else if (isAndroidDevice) {
     installPrompt.classList.remove('ios');
     installPromptTitle.textContent = 'Install Wozzlar';
-    installPromptMessage.textContent = "Install this app for easy access: tap the menu (⋮) and then 'Install app' or 'Add to Home screen'.";
+    installPromptMessage.textContent = INSTALL_MESSAGES.android;
   } else {
     // Generic mobile message
     installPrompt.classList.remove('ios');
     installPromptTitle.textContent = 'Install Wozzlar';
-    installPromptMessage.textContent = "Add this app to your home screen for quick access.";
+    installPromptMessage.textContent = INSTALL_MESSAGES.generic;
   }
   
   // Show after a short delay to not be too intrusive
   setTimeout(() => {
     installPrompt.classList.add('show');
-  }, 2000);
+  }, INSTALL_PROMPT_DELAY_MS);
 }
 
 function hideInstallPrompt() {
