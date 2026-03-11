@@ -1690,6 +1690,76 @@ async function handleAddToHomeScreen(){
 }
 a2hsLink.addEventListener('click', (e)=>{ e.preventDefault(); handleAddToHomeScreen(); });
 
+/* ===== Install Prompt Banner (Auto-show on Mobile) ===== */
+const installPrompt = document.getElementById('installPrompt');
+const installPromptClose = document.getElementById('installPromptClose');
+const installPromptTitle = document.getElementById('installPromptTitle');
+const installPromptMessage = document.getElementById('installPromptMessage');
+
+function isStandalone() {
+  // Check if app is already installed/running as PWA
+  return (window.matchMedia('(display-mode: standalone)').matches) ||
+         (window.navigator.standalone) ||
+         document.referrer.includes('android-app://');
+}
+
+function shouldShowInstallPrompt() {
+  // Don't show if not mobile
+  if (!isMobile()) return false;
+  
+  // Don't show if already installed as PWA
+  if (isStandalone()) return false;
+  
+  // Check if user has dismissed it
+  try {
+    const dismissed = localStorage.getItem('wozzlar_install_prompt_dismissed');
+    if (dismissed) {
+      const dismissedTime = parseInt(dismissed, 10);
+      const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
+      // Show again after 7 days
+      if (daysSinceDismissed < 7) return false;
+    }
+  } catch(e) {}
+  
+  return true;
+}
+
+function showInstallPrompt() {
+  if (!shouldShowInstallPrompt()) return;
+  
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  
+  if (isIOS) {
+    installPrompt.classList.add('ios');
+    installPromptTitle.textContent = 'Install Wozzlar';
+    installPromptMessage.textContent = "Install this app on your iPhone for easy access: tap Share ⬆️ and then 'Add to Home Screen'.";
+  } else if (isAndroid) {
+    installPrompt.classList.remove('ios');
+    installPromptTitle.textContent = 'Install Wozzlar';
+    installPromptMessage.textContent = "Install this app for easy access: tap the menu (⋮) and then 'Install app' or 'Add to Home screen'.";
+  } else {
+    // Generic mobile message
+    installPrompt.classList.remove('ios');
+    installPromptTitle.textContent = 'Install Wozzlar';
+    installPromptMessage.textContent = "Add this app to your home screen for quick access.";
+  }
+  
+  // Show after a short delay to not be too intrusive
+  setTimeout(() => {
+    installPrompt.classList.add('show');
+  }, 2000);
+}
+
+function hideInstallPrompt() {
+  installPrompt.classList.remove('show');
+  try {
+    localStorage.setItem('wozzlar_install_prompt_dismissed', Date.now().toString());
+  } catch(e) {}
+}
+
+installPromptClose.addEventListener('click', hideInstallPrompt);
+
 /* ===== Yesterday/result badges ===== */
 function setLastResult(puzzleNumber, result){ try{ localStorage.setItem('wozzlar_last_result_v2', JSON.stringify({puzzleNumber, result})); }catch{} }
 function getLastResult(){ try{ return JSON.parse(localStorage.getItem('wozzlar_last_result_v2')) || null; }catch{ return null; } }
@@ -1977,6 +2047,9 @@ async function init(){
   // Auto-start tour for first-time visitors
   if(!localStorage.getItem('wozzlar_tour_seen_v1')){
     setTimeout(startTour, 900);
+  } else {
+    // Show install prompt only if tour has been seen (not a first-time visitor)
+    showInstallPrompt();
   }
 }
 window.addEventListener('DOMContentLoaded', ()=>{ init(); });
