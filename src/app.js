@@ -396,6 +396,11 @@ const wozzBadge  = document.getElementById('wozzBadge');
 const superBadge = document.getElementById('superBadge');
 const wompBadge  = document.getElementById('wompBadge');
 
+const installPrompt = document.getElementById('installPrompt');
+const installPromptClose = document.getElementById('installPromptClose');
+const installPromptTitle = document.getElementById('installPromptTitle');
+const installPromptMessage = document.getElementById('installPromptMessage');
+
 const BRAND_LETTERS = ['bW','bO','bZ1','bZ2','bL','bA','bR'].map(id => document.getElementById(id));
 
 const KEY_ROWS = ["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
@@ -1691,11 +1696,6 @@ async function handleAddToHomeScreen(){
 a2hsLink.addEventListener('click', (e)=>{ e.preventDefault(); handleAddToHomeScreen(); });
 
 /* ===== Install Prompt Banner (Auto-show on Mobile) ===== */
-const installPrompt = document.getElementById('installPrompt');
-const installPromptClose = document.getElementById('installPromptClose');
-const installPromptTitle = document.getElementById('installPromptTitle');
-const installPromptMessage = document.getElementById('installPromptMessage');
-
 function isStandalone() {
   // Check if app is already installed/running as PWA
   return (window.matchMedia('(display-mode: standalone)').matches) ||
