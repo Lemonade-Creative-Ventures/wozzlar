@@ -87,39 +87,20 @@
     text-align: center;
     padding: 20px;
     max-width: 500px;
-  }
-  
-  .splash-logo {
-    font-family: "Uncial Antiqua", ui-serif, Georgia, serif;
-    font-size: 64px;
-    letter-spacing: 2px;
-    margin-bottom: 20px;
     display: flex;
-    gap: 0.15em;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
   }
-  
-  .splash-logo span {
-    opacity: 0;
-    animation: logoReveal 0.5s ease-out forwards;
-  }
-  
-  .splash-logo .logo-w { animation-delay: 0.1s; }
-  .splash-logo .logo-o { animation-delay: 0.2s; }
-  .splash-logo .logo-z1 { animation-delay: 0.3s; }
-  .splash-logo .logo-z2 { animation-delay: 0.4s; }
-  .splash-logo .logo-l { animation-delay: 0.5s; }
-  .splash-logo .logo-a { animation-delay: 0.6s; }
-  .splash-logo .logo-r { animation-delay: 0.7s; }
   
   .splash-logo-img {
-    width: 80px;
-    height: 80px;
-    margin: 20px auto;
+    width: 120px;
+    height: 120px;
+    margin-top: 40px;
     display: block;
     opacity: 0;
-    animation: fadeInUp 0.5s ease-out 0.8s forwards;
-    border-radius: 12px;
+    animation: fadeInUp 0.5s ease-out 0.4s forwards;
+    border-radius: 20px;
+    order: 5; /* Position at bottom */
   }
   
   @keyframes logoReveal {
@@ -135,11 +116,12 @@
   
   .splash-title {
     font-family: "Kalam", system-ui, sans-serif;
-    font-size: 2rem;
+    font-size: 2.5rem;
     font-weight: 700;
     margin: 0 0 16px 0;
     opacity: 0;
-    animation: fadeInUp 0.5s ease-out 1s forwards;
+    animation: fadeInUp 0.5s ease-out 0.1s forwards;
+    order: 1;
   }
   
   .splash-tagline {
@@ -149,7 +131,8 @@
     margin: 0 0 32px 0;
     color: var(--text-soft);
     opacity: 0;
-    animation: fadeInUp 0.5s ease-out 1.2s forwards;
+    animation: fadeInUp 0.5s ease-out 0.2s forwards;
+    order: 2;
   }
   
   .splash-play-btn {
@@ -163,8 +146,9 @@
     cursor: pointer;
     transition: all 0.2s ease;
     opacity: 0;
-    animation: fadeInUp 0.5s ease-out 1.4s forwards;
+    animation: fadeInUp 0.5s ease-out 0.3s forwards;
     box-shadow: 0 4px 12px rgba(255, 79, 163, 0.3);
+    order: 3;
   }
   
   .splash-play-btn:hover {
@@ -184,7 +168,8 @@
     justify-content: center;
     align-items: center;
     opacity: 0;
-    animation: fadeInUp 0.5s ease-out 1.6s forwards;
+    animation: fadeInUp 0.5s ease-out 0.35s forwards;
+    order: 4;
   }
   
   .splash-date {
@@ -216,7 +201,6 @@
   
   @media (prefers-reduced-motion: reduce) {
     .splash-screen,
-    .splash-logo span,
     .splash-logo-img,
     .splash-title,
     .splash-tagline,
@@ -229,9 +213,6 @@
   }
   
   @media (max-width: 520px) {
-    .splash-logo {
-      font-size: 48px;
-    }
     .splash-title {
       font-size: 1.5rem;
     }

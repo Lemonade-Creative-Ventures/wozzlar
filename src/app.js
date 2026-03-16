@@ -393,7 +393,6 @@ const hamburger  = document.getElementById('hamburger');
 const menu       = document.getElementById('menu');
 const feedbackLink = document.getElementById('feedbackLink');
 const howToPlayLink = document.getElementById('howToPlayLink');
-const tourLink   = document.getElementById('tourLink');
 const a2hsLink   = document.getElementById('a2hsLink');
 const contactLink = document.getElementById('contactLink');
 
@@ -2002,8 +2001,9 @@ function startTour(){
   // Save current state and load tour puzzle (only if not already in tour mode)
   if(!_inTourMode){
     saveTourState();
+    loadTourPuzzle();
   }
-  loadTourPuzzle();
+  // If already in tour mode, don't reload - just restart the tour guide
 
   // Tour step configuration
   const TOUR_STEPS = [
@@ -2024,7 +2024,7 @@ function startTour(){
         {
           target: "#phrase",
           title: "See the Colors?",
-          content: "<span style='color:#FF4FA3;font-weight:800'>■ Pink</span> means correct letter, correct spot!<br><span style='color:#3FCBFF;font-weight:800'>■ Blue</span> means letter is in the word but wrong spot.<br><br>Letters on the left show what you typed. <em>Underlined = the letter is in the word, but in the wrong position.</em>",
+          content: "<span style='color:#FF4FA3;font-weight:800'>■ Pink</span> means correct letter, correct spot!<br><span style='color:#3FCBFF;font-weight:800'>■ Blue</span> means letter is in the word but wrong spot.<br><br><span style='font-family:\"Kalam\",system-ui,sans-serif;font-weight:700;color:#7fc9ff;'>Little blue words</span> to the left of the puzzle words are the ones you have guessed. If one of the letters is <span style='font-family:\"Kalam\",system-ui,sans-serif;font-weight:700;color:#7fc9ff;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:2px;'>Underlined</span>, the letter is in the word, but in the wrong position.",
         },
         {
           target: "#kb",
@@ -2052,7 +2052,7 @@ function startTour(){
       exitOnClickOutside: false,
       nextLabel: "Next →",
       prevLabel: "← Back",
-      finishLabel: "Let's Play!",
+      finishLabel: "Let's Play Today's Puzzle!",
       dialogMaxWidth: 360,
       backdropClass: "wz-tour-backdrop",
       dialogClass: "wz-tour-dialog",
@@ -2083,11 +2083,6 @@ function startTour(){
   _tgInstance.start();
 }
 
-tourLink.addEventListener('click', (e)=>{
-  e.preventDefault();
-  startTour();
-});
-
 /* ===== Init & navigation safety ===== */
 async function goToDaily(){
   modalEl.classList.remove('show');
@@ -2111,21 +2106,8 @@ async function init(){
 
   window.addEventListener('beforeunload', saveDailyState);
 
-  // Check if returning user (has seen splash before)
-  const hasSeenSplash = localStorage.getItem('wozzlar_splash_seen');
-  if(hasSeenSplash){
-    // Skip splash for returning users
-    hideSplashScreen(true);
-    
-    // Auto-start tour for first-time visitors
-    if(!localStorage.getItem('wozzlar_tour_seen_v1')){
-      setTimeout(startTour, 900);
-    } else {
-      // Show install prompt only if tour has been seen (not a first-time visitor)
-      showInstallPrompt();
-    }
-  }
-  // else: splash screen will remain visible until user clicks Play
+  // Splash screen always shows - user must click Play every time
+  // (localStorage check removed to show splash on every visit)
 }
 
 function initSplashScreen(){
@@ -2145,7 +2127,6 @@ function initSplashScreen(){
   // Handle Play button click
   splashPlayBtn.addEventListener('click', ()=>{
     hideSplashScreen();
-    localStorage.setItem('wozzlar_splash_seen', '1');
     
     // Auto-start tour for first-time visitors after splash
     if(!localStorage.getItem('wozzlar_tour_seen_v1')){
