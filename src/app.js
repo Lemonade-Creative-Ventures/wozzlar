@@ -1216,6 +1216,8 @@ function showCompletionOverlay(fromAllIn){
       // This ensures that when the user closes the final step, onAfterExit
       // will see _tourWaitingForCompletion=false and proceed with normal cleanup
       _tourWaitingForCompletion = false;
+      // Need to restart the tour to reactivate the dialog, then jump to final step
+      _tgInstance.start();
       _tgInstance.visitStep(TOUR_STEP_COMPLETE);
     }
     return;
