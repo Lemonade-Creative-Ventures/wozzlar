@@ -1650,7 +1650,9 @@ feedbackLink.addEventListener('click', (e)=>{
 
 howToPlayLink.addEventListener('click', (e)=>{
   e.preventDefault();
-  showHowToPlay();
+  menu.classList.remove('show');
+  hamburger.setAttribute('aria-expanded','false');
+  startTour(); // Use tour guide instead of static instructions
 });
 
 /* ===== Add to Home Screen ===== */
@@ -2018,36 +2020,21 @@ function startTour(){
         {
           target: "#phrase",
           title: "See the Colors?",
-          content: "<span style='color:#FF4FA3;font-weight:800'>■ Pink</span> means correct letter, correct spot!<br><span style='color:#3FCBFF;font-weight:800'>■ Blue</span> means letter is in the word but wrong spot.<br><strong>■ Dark</strong> means not in this word.<br><br>Letters on the left show what you typed. <em>Underlined</em> = wrong position.",
+          content: "<span style='color:#FF4FA3;font-weight:800'>■ Pink</span> means correct letter, correct spot!<br><span style='color:#3FCBFF;font-weight:800'>■ Blue</span> means letter is in the word but wrong spot.<br><br>Letters on the left show what you typed. <em>Underlined = the letter is in the word, but in the wrong position.</em>",
         },
         {
           target: "#kb",
           title: "Your Keyboard Learns",
-          content: "The keyboard now shows which letters you've tried. Use what you learned to guess again!",
+          content: "The keyboard now shows which letters you've tried. Use what you learned to guess again!<br><br><strong>Blue squares</strong> on pink keys show how many more of that letter remain in the puzzle.<br><br>Want to solve the whole puzzle at once? Use the <strong>ALL IN</strong> button for high stakes!",
         },
         {
-          target: "#phrase",
-          title: "Keep Guessing!",
-          content: "Use the color clues to figure out the first word. Try different letter combinations until all tiles turn <span style='color:#FF4FA3;font-weight:800'>pink</span>!<br><br><em>Tip: Pink tiles show correct letters. Use those and rearrange the blue ones.</em>",
-        },
-        {
-          target: "#phrase",
-          title: "Word Solved! ✨",
-          content: "Nice! When you solve a word, the game automatically moves to the next one. Now try the <strong>6-letter</strong> word below.",
-        },
-        {
-          target: "#phrase",
-          title: "Your Turn!",
-          content: "Use what you learned: guess, check colors, and adjust. You've got this! Try to solve the second word.",
+          title: "Your Turn to Solve! 🎮",
+          content: "Now use what you've learned to solve the puzzle! Try different combinations based on the color clues.<br><br>Need help? Tap the menu and select <strong>How to Play</strong> anytime to review the instructions.",
         },
         {
           target: "#phrase",
           title: "Puzzle Complete! 🎉",
-          content: "That's how you play! <strong>Daily puzzles give you 7 total guesses</strong> for the whole phrase.<br><br>Win → 🏆 Wozzlar badge · Lose → 😐 Womp badge<br><br>Hit <strong>Practice</strong> for unlimited puzzles!",
-        },
-        {
-          title: "Ready! 🚀",
-          content: "Now play today's real puzzle!",
+          content: "Amazing work! You've mastered Wozzlar! 🏆<br><br><strong>Daily puzzles</strong> give you 7 guesses total. Solve it to earn badges and build your streak!<br><br>Ready to play today's real puzzle?",
         },
       ],
       debug: false,

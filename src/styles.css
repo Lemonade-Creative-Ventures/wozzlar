@@ -112,6 +112,16 @@
   .splash-logo .logo-a { animation-delay: 0.6s; }
   .splash-logo .logo-r { animation-delay: 0.7s; }
   
+  .splash-logo-img {
+    width: 80px;
+    height: 80px;
+    margin: 20px auto;
+    display: block;
+    opacity: 0;
+    animation: fadeInUp 0.5s ease-out 0.8s forwards;
+    border-radius: 12px;
+  }
+  
   @keyframes logoReveal {
     from {
       opacity: 0;
@@ -129,7 +139,7 @@
     font-weight: 700;
     margin: 0 0 16px 0;
     opacity: 0;
-    animation: fadeInUp 0.5s ease-out 0.8s forwards;
+    animation: fadeInUp 0.5s ease-out 1s forwards;
   }
   
   .splash-tagline {
@@ -139,7 +149,7 @@
     margin: 0 0 32px 0;
     color: var(--text-soft);
     opacity: 0;
-    animation: fadeInUp 0.5s ease-out 1s forwards;
+    animation: fadeInUp 0.5s ease-out 1.2s forwards;
   }
   
   .splash-play-btn {
@@ -153,7 +163,7 @@
     cursor: pointer;
     transition: all 0.2s ease;
     opacity: 0;
-    animation: fadeInUp 0.5s ease-out 1.2s forwards;
+    animation: fadeInUp 0.5s ease-out 1.4s forwards;
     box-shadow: 0 4px 12px rgba(255, 79, 163, 0.3);
   }
   
@@ -174,7 +184,7 @@
     justify-content: center;
     align-items: center;
     opacity: 0;
-    animation: fadeInUp 0.5s ease-out 1.4s forwards;
+    animation: fadeInUp 0.5s ease-out 1.6s forwards;
   }
   
   .splash-date {
@@ -207,6 +217,7 @@
   @media (prefers-reduced-motion: reduce) {
     .splash-screen,
     .splash-logo span,
+    .splash-logo-img,
     .splash-title,
     .splash-tagline,
     .splash-play-btn,
