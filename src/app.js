@@ -1209,8 +1209,14 @@ function clearStatsBlocks(){
 }
 
 function showCompletionOverlay(fromAllIn){
-  // Don't show completion modal during tour mode
-  if(_inTourMode) return;
+  // During tour mode, advance to the final step instead of showing completion modal
+  if(_inTourMode) {
+    if(_tgInstance && isPuzzleSolved()){
+      // Advance to the final "Puzzle Complete" step
+      _tgInstance.visitStep(6); // Step 6 is the "Puzzle Complete" step
+    }
+    return;
+  }
   
   setModalCloseCancelsAllIn(false);
   const solvedIn = `${state.guessCount}/${TOTAL_GUESS_LIMIT}`;
@@ -2045,6 +2051,16 @@ function startTour(){
       dialogMaxWidth: 360,
       backdropClass: "wz-tour-backdrop",
       dialogClass: "wz-tour-dialog",
+      
+      // Custom navigation to check puzzle completion before final step
+      onBeforeStepChange: (oldStep, newStep) => {
+        // If trying to go to the last step (Puzzle Complete), check if puzzle is solved
+        if(newStep === 6 && !isPuzzleSolved()){
+          // Don't allow navigation to final step until puzzle is complete
+          return false;
+        }
+        return true;
+      },
     });
 
     _tgInstance.onAfterExit(() => {
