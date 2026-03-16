@@ -368,6 +368,11 @@ const hintEl    = document.getElementById('hint');
 
 const shareButton = document.getElementById('shareButton');
 
+const splashScreen = document.getElementById('splashScreen');
+const splashPlayBtn = document.getElementById('splashPlayBtn');
+const splashDate = document.getElementById('splashDate');
+const splashNumber = document.getElementById('splashNumber');
+
 const modalEl    = document.getElementById('modal');
 const modalTitle = document.getElementById('modalTitle');
 const modalMsg   = document.getElementById('modalMsg');
@@ -2085,6 +2090,9 @@ async function goToDaily(){
 }
 
 async function init(){
+  // Initialize splash screen
+  initSplashScreen();
+  
   // Load sheet daily (or fallback), then restore any saved daily state.
   await loadDailyPuzzle();
   showYesterdayBadgeIfAny();
@@ -2094,12 +2102,60 @@ async function init(){
 
   window.addEventListener('beforeunload', saveDailyState);
 
-  // Auto-start tour for first-time visitors
-  if(!localStorage.getItem('wozzlar_tour_seen_v1')){
-    setTimeout(startTour, 900);
+  // Check if returning user (has seen splash before)
+  const hasSeenSplash = localStorage.getItem('wozzlar_splash_seen');
+  if(hasSeenSplash){
+    // Skip splash for returning users
+    hideSplashScreen(true);
+    
+    // Auto-start tour for first-time visitors
+    if(!localStorage.getItem('wozzlar_tour_seen_v1')){
+      setTimeout(startTour, 900);
+    } else {
+      // Show install prompt only if tour has been seen (not a first-time visitor)
+      showInstallPrompt();
+    }
+  }
+  // else: splash screen will remain visible until user clicks Play
+}
+
+function initSplashScreen(){
+  // Set splash screen date and puzzle number
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
+  splashDate.textContent = dateStr;
+  
+  // Use the current puzzle number
+  const puzzleNum = currentPuzzleNumber();
+  splashNumber.textContent = `Daily #${puzzleNum}`;
+  
+  // Handle Play button click
+  splashPlayBtn.addEventListener('click', ()=>{
+    hideSplashScreen();
+    localStorage.setItem('wozzlar_splash_seen', '1');
+    
+    // Auto-start tour for first-time visitors after splash
+    if(!localStorage.getItem('wozzlar_tour_seen_v1')){
+      setTimeout(startTour, 500);
+    } else {
+      // Show install prompt only if tour has been seen
+      showInstallPrompt();
+    }
+  });
+}
+
+function hideSplashScreen(immediate = false){
+  if(immediate){
+    splashScreen.style.display = 'none';
   } else {
-    // Show install prompt only if tour has been seen (not a first-time visitor)
-    showInstallPrompt();
+    splashScreen.classList.add('hidden');
+    setTimeout(()=>{
+      splashScreen.style.display = 'none';
+    }, 300);
   }
 }
 window.addEventListener('DOMContentLoaded', ()=>{ init(); });
