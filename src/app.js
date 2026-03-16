@@ -1213,7 +1213,7 @@ function showCompletionOverlay(fromAllIn){
   if(_inTourMode) {
     if(_tgInstance && isPuzzleSolved()){
       // Advance to the final "Puzzle Complete" step
-      _tgInstance.visitStep(6); // Step 6 is the "Puzzle Complete" step
+      _tgInstance.visitStep(FINAL_TOUR_STEP_INDEX);
     }
     return;
   }
@@ -2005,10 +2005,8 @@ function startTour(){
   }
   loadTourPuzzle();
 
-  // Create the instance once to avoid duplicate DOM nodes
-  if(!_tgInstance){
-    _tgInstance = new tourguide.TourGuideClient({
-      steps: [
+  // Tour step configuration
+  const TOUR_STEPS = [
         {
           title: "Let's Play! 🧙‍♂️",
           content: "You'll solve this phrase word by word. Let me show you how the game works as you play!",
@@ -2042,7 +2040,14 @@ function startTour(){
           title: "Puzzle Complete! 🎉",
           content: "Amazing work! You've mastered Wozzlar! 🏆<br><br><strong>Daily puzzles</strong> give you 7 guesses total. Solve it to earn badges and build your streak!<br><br>Ready to play today's real puzzle?",
         },
-      ],
+      ];
+  
+  const FINAL_TOUR_STEP_INDEX = TOUR_STEPS.length - 1;
+
+  // Create the instance once to avoid duplicate DOM nodes
+  if(!_tgInstance){
+    _tgInstance = new tourguide.TourGuideClient({
+      steps: TOUR_STEPS,
       debug: false,
       exitOnClickOutside: false,
       nextLabel: "Next →",
@@ -2055,7 +2060,7 @@ function startTour(){
       // Custom navigation to check puzzle completion before final step
       onBeforeStepChange: (oldStep, newStep) => {
         // If trying to go to the last step (Puzzle Complete), check if puzzle is solved
-        if(newStep === 6 && !isPuzzleSolved()){
+        if(newStep === FINAL_TOUR_STEP_INDEX && !isPuzzleSolved()){
           // Don't allow navigation to final step until puzzle is complete
           return false;
         }
