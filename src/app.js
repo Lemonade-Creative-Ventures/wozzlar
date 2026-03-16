@@ -1214,7 +1214,8 @@ function showCompletionOverlay(fromAllIn){
       // Show only the final "Puzzle Complete" step
       _tourWaitingForCompletion = false;
       // Jump directly to the final step without restarting
-      // Note: _inTourMode will be set to false in onAfterExit when user closes the dialog
+      // Note: _inTourMode will be set to false in onAfterExit when user closes this dialog
+      // Since _tourWaitingForCompletion is now false, the exit handler will restore state
       _tgInstance.visitStep(TOUR_STEP_COMPLETE);
     }
     return;
@@ -2083,8 +2084,8 @@ function startTour(){
         // but keep tour mode active so we can show the final step when puzzle is solved
         if(step === TOUR_STEP_YOUR_TURN) {
           _tourWaitingForCompletion = true;
-          // Finish/close the tour dialog temporarily
-          // We'll manually show the final step when puzzle is complete
+          // Close the tour dialog temporarily by finishing
+          // The onAfterExit will check _tourWaitingForCompletion and skip state restoration
           if(_tgInstance) {
             _tgInstance.finish();
           }
@@ -2093,8 +2094,13 @@ function startTour(){
     });
 
     _tgInstance.onAfterExit(() => {
-      // Always restore state and clean up flags when tour exits
-      // This handles both normal completion and early exit
+      // Always clean up flags, but only restore state if not waiting for puzzle completion
+      if(_tourWaitingForCompletion) {
+        // User is solving the puzzle - keep tour mode active but don't restore
+        // State will be restored when they complete the puzzle and close the final step
+        return;
+      }
+      // Normal exit - restore state and clean up
       _inTourMode = false;
       _tourWaitingForCompletion = false;
       restoreTourState();
