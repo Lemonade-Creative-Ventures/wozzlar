@@ -93,14 +93,13 @@
   }
   
   .splash-logo-img {
-    width: 120px;
-    height: 120px;
-    margin-top: 40px;
+    width: 180px;
+    height: 180px;
+    margin: 20px auto 24px;
     display: block;
     opacity: 0;
-    animation: fadeInUp 0.5s ease-out 0.4s forwards;
+    animation: fadeInUp 0.5s ease-out 0.2s forwards;
     border-radius: 20px;
-    order: 5; /* Position at bottom */
   }
   
   @keyframes logoReveal {
@@ -118,10 +117,9 @@
     font-family: "Kalam", system-ui, sans-serif;
     font-size: 2.5rem;
     font-weight: 700;
-    margin: 0 0 16px 0;
+    margin: 0 0 0 0;
     opacity: 0;
     animation: fadeInUp 0.5s ease-out 0.1s forwards;
-    order: 1;
   }
   
   .splash-tagline {
@@ -131,8 +129,7 @@
     margin: 0 0 32px 0;
     color: var(--text-soft);
     opacity: 0;
-    animation: fadeInUp 0.5s ease-out 0.2s forwards;
-    order: 2;
+    animation: fadeInUp 0.5s ease-out 0.3s forwards;
   }
   
   .splash-play-btn {
@@ -146,9 +143,8 @@
     cursor: pointer;
     transition: all 0.2s ease;
     opacity: 0;
-    animation: fadeInUp 0.5s ease-out 0.3s forwards;
+    animation: fadeInUp 0.5s ease-out 0.4s forwards;
     box-shadow: 0 4px 12px rgba(255, 79, 163, 0.3);
-    order: 3;
   }
   
   .splash-play-btn:hover {
@@ -168,8 +164,7 @@
     justify-content: center;
     align-items: center;
     opacity: 0;
-    animation: fadeInUp 0.5s ease-out 0.35s forwards;
-    order: 4;
+    animation: fadeInUp 0.5s ease-out 0.5s forwards;
   }
   
   .splash-date {
