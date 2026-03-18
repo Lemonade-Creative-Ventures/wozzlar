@@ -914,16 +914,36 @@ function renderSideTags(wi){
   if(!left) return;
   left.innerHTML = '';
 
+  const target = state.words[wi];
   const scoreMap = buildGuessScoreMapForRow(wi);
   const uniq = uniqueGuessesForRow(wi);
   uniq.forEach(word => {
     const el = document.createElement('span');
     el.className = 'tag';
     const scores = scoreMap[word] || [];
+    const gArr = word.toUpperCase().split('');
+    const tArr = target.split('');
+
+    // Compute letters in target that were not accounted for by hits or nears.
+    // These are extra occurrences that a hit letter may still "cover".
+    const remain = {};
+    for(let i=0;i<tArr.length;i++){
+      if(gArr[i] !== tArr[i]) remain[tArr[i]] = (remain[tArr[i]]||0)+1;
+    }
+    for(let i=0;i<gArr.length;i++){
+      if(scores[i]==='hit') continue;
+      if(remain[gArr[i]]>0) remain[gArr[i]]--;
+    }
+
     const frag = document.createDocumentFragment();
-    word.toUpperCase().split('').forEach((ch, idx) => {
+    gArr.forEach((ch, idx) => {
       const sp = document.createElement('span');
-      sp.className = 'ltr' + (scores[idx]==='near' ? ' near' : '' );
+      let isNear = scores[idx] === 'near';
+      if(!isNear && scores[idx] === 'hit' && (remain[ch]||0) > 0){
+        isNear = true;
+        remain[ch]--;
+      }
+      sp.className = 'ltr' + (isNear ? ' near' : '');
       sp.textContent = ch;
       frag.appendChild(sp);
     });
