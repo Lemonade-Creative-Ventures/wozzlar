@@ -2069,7 +2069,9 @@ function typeLetterAnimated(letter, delay = 0) {
   return new Promise(resolve => {
     const timeoutId = setTimeout(() => {
       typeLetter(letter);
-      resolve();
+      // Wait a bit after typing for visual effect
+      const resolveTimeoutId = setTimeout(resolve, 200);
+      _tourDemoTimeouts.push(resolveTimeoutId);
     }, delay);
     _tourDemoTimeouts.push(timeoutId);
   });
@@ -2086,9 +2088,9 @@ function submitAnimated(delay = 0) {
 }
 
 async function automatedDemoStep(word) {
-  // Type each letter with a slight delay for visual effect
+  // Type each letter with animation delays
   for (let i = 0; i < word.length; i++) {
-    await typeLetterAnimated(word[i], 200);
+    await typeLetterAnimated(word[i], 0);
   }
   // Wait a bit before submitting
   await new Promise(resolve => {
@@ -2129,12 +2131,12 @@ function startTour(){
         {
           target: "#phrase",
           title: "Your Mystery Phrase",
-          content: "Two words to discover: <strong>WORD</strong> and <strong>WIZARD</strong>. Let's start by guessing the first word. I'll type '<strong>ROCK</strong>' to show you how it works.",
+          content: "Two words to discover. Watch as I make my first guess...",
         },
         {
           target: "#phrase",
           title: "See the Colors? 🎨",
-          content: "<span style='color:#FF4FA3;font-weight:800'>■ Pink</span> means correct letter, correct spot!<br><span style='color:#3FCBFF;font-weight:800'>■ Blue</span> means letter is in the word but wrong spot.<br><br>Notice the <strong>O</strong> and <strong>R</strong> turned blue - they're in 'WORD' but in different positions!",
+          content: "<span style='color:#FF4FA3;font-weight:800'>■ Pink</span> means correct letter, correct spot!<br><span style='color:#3FCBFF;font-weight:800'>■ Blue</span> means letter is in the word but wrong spot.<br><br>Notice some letters turned blue - they're in the puzzle but in different positions!",
         },
         {
           target: "#kb",
@@ -2144,17 +2146,17 @@ function startTour(){
         {
           target: "#phrase",
           title: "Using the Clues 💡",
-          content: "Now I'll try '<strong>WORD</strong>' based on what we learned. Watch how all four letters turn pink when we get it right!",
+          content: "Now I'll use the clues to solve the first word. Watch the letters turn pink when they're all in the right spots!",
         },
         {
           target: "#phrase",
           title: "On to Word Two! ✨",
-          content: "Great! First word done. Now for '<strong>WIZARD</strong>' - a 6-letter word. I'll guess '<strong>WANDER</strong>' first to learn which letters are in it.",
+          content: "Great! First word done. Now let me work on the second word. I'll start with a guess to learn which letters are in it.",
         },
         {
           target: "#phrase",
           title: "Almost There! 🎯",
-          content: "Look at those clues! <strong>W</strong> and <strong>A</strong> are pink, <strong>D</strong> and <strong>R</strong> are blue. Now I know enough to solve it with '<strong>WIZARD</strong>'!",
+          content: "Look at those clues! Some letters are pink (correct spot), some are blue (wrong spot). Now I can solve it!",
         },
         {
           target: "#phrase",
@@ -2179,52 +2181,45 @@ function startTour(){
       dialogClass: "wz-tour-dialog",
       
       // Custom navigation to handle step transitions with automated demos
-      onBeforeStepChange: async (oldStep, newStep) => {
-        // Clear any pending demo timeouts
+      onBeforeStepChange: (oldStep, newStep) => {
+        // Clear any pending demo timeouts when navigating
         clearAllDemoTimeouts();
-        
-        // Perform automated actions at specific steps
-        if(newStep === 2) {
-          // After step 1, automatically type and submit "ROCK"
-          const timeoutId = setTimeout(async () => {
-            await automatedDemoStep('ROCK');
-          }, 800);
-          _tourDemoTimeouts.push(timeoutId);
-          return true;
-        }
-        
-        if(newStep === 4) {
-          // After step 3, automatically type and submit "WORD"
-          const timeoutId = setTimeout(async () => {
-            await automatedDemoStep('WORD');
-          }, 800);
-          _tourDemoTimeouts.push(timeoutId);
-          return true;
-        }
-        
-        if(newStep === 5) {
-          // After step 4, automatically type and submit "WANDER"
-          const timeoutId = setTimeout(async () => {
-            await automatedDemoStep('WANDER');
-          }, 800);
-          _tourDemoTimeouts.push(timeoutId);
-          return true;
-        }
-        
-        if(newStep === 6) {
-          // After step 5, automatically type and submit "WIZARD"
-          const timeoutId = setTimeout(async () => {
-            await automatedDemoStep('WIZARD');
-          }, 800);
-          _tourDemoTimeouts.push(timeoutId);
-          return true;
-        }
-        
         return true;
       },
       
       onAfterStepChange: (step) => {
-        // No special handling needed here
+        // Trigger automated demos after certain steps are shown
+        if(step === 1) {
+          // After showing step 1 "Your Mystery Phrase", wait a moment then type "ROCK"
+          const timeoutId = setTimeout(async () => {
+            await automatedDemoStep('ROCK');
+          }, 1200);
+          _tourDemoTimeouts.push(timeoutId);
+        }
+        
+        if(step === 3) {
+          // After showing step 3 "Your Keyboard Updates", type "WORD"
+          const timeoutId = setTimeout(async () => {
+            await automatedDemoStep('WORD');
+          }, 1200);
+          _tourDemoTimeouts.push(timeoutId);
+        }
+        
+        if(step === 4) {
+          // After showing step 4 "Using the Clues", type "WANDER"
+          const timeoutId = setTimeout(async () => {
+            await automatedDemoStep('WANDER');
+          }, 1200);
+          _tourDemoTimeouts.push(timeoutId);
+        }
+        
+        if(step === 5) {
+          // After showing step 5 "On to Word Two!", type "WIZARD"
+          const timeoutId = setTimeout(async () => {
+            await automatedDemoStep('WIZARD');
+          }, 1200);
+          _tourDemoTimeouts.push(timeoutId);
+        }
       },
     });
 
