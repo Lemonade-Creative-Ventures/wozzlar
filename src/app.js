@@ -1184,6 +1184,11 @@ function submitActiveWord(){
   paintRows(); updateControlsState(); renderSideTags(wi);
   renderKeyCounters();
   saveDailyState();
+  
+  // Save tour progress after each guess during tour mode
+  if(_inTourMode){
+    saveTourPuzzleProgress();
+  }
 }
 
 function renderReveal(wi, guess, scores){
@@ -2053,6 +2058,14 @@ function restoreTourState(){
     }
     _tourState = null;
     _inTourMode = false;
+    
+    // Clear saved tour progress when completing the tour
+    try{
+      localStorage.removeItem('wozzlar_tour_progress');
+    }catch(e){
+      console.warn('wozzlar: could not clear tour progress', e);
+    }
+    
     rebuildUIFromState();
     renderKeyCounters();
     paintRows();
@@ -2060,23 +2073,69 @@ function restoreTourState(){
   }
 }
 
+function saveTourPuzzleProgress(){
+  // Save the current tour puzzle progress to localStorage
+  if(_inTourMode && state){
+    const progressToSave = {
+      ...state,
+      inPhrase: Array.from(state.inPhrase),
+      wordsContaining: Object.fromEntries(
+        Object.entries(state.wordsContaining).map(([k, v]) => [k, Array.from(v)])
+      )
+    };
+    try{
+      localStorage.setItem('wozzlar_tour_progress', JSON.stringify(progressToSave));
+    }catch(e){
+      console.warn('wozzlar: could not save tour progress', e);
+    }
+  }
+}
+
+function loadTourPuzzleProgress(){
+  // Try to load saved tour puzzle progress from localStorage
+  try{
+    const saved = localStorage.getItem('wozzlar_tour_progress');
+    if(saved){
+      const progressData = JSON.parse(saved);
+      // Restore Sets from arrays
+      progressData.inPhrase = new Set(progressData.inPhrase);
+      progressData.wordsContaining = Object.fromEntries(
+        Object.entries(progressData.wordsContaining).map(([k, v]) => [k, new Set(v)])
+      );
+      return progressData;
+    }
+  }catch(e){
+    console.warn('wozzlar: could not load tour progress', e);
+  }
+  return null;
+}
+
 function loadTourPuzzle(){
-  // Initialize game with the WORD WIZARD puzzle for the tour
-  const puz = TOUR_PUZZLE;
-  state = baseState(puz, "Tour", null);
-  state.words.forEach((w, wi) => {
-    w.split('').forEach(c => {
-      if(/[A-Z]/.test(c)){
-        state.inPhrase.add(c);
-        (state.wordsContaining[c] ||= new Set()).add(wi);
-      }
+  // Try to restore saved progress first
+  const savedProgress = loadTourPuzzleProgress();
+  
+  if(savedProgress){
+    // Restore saved tour progress
+    state = savedProgress;
+  } else {
+    // Initialize game with the WORD WIZARD puzzle for the tour
+    const puz = TOUR_PUZZLE;
+    state = baseState(puz, "Tour", null);
+    state.words.forEach((w, wi) => {
+      w.split('').forEach(c => {
+        if(/[A-Z]/.test(c)){
+          state.inPhrase.add(c);
+          (state.wordsContaining[c] ||= new Set()).add(wi);
+        }
+      });
     });
-  });
-  state.solvedWord = state.words.map(()=> false);
-  state.locks  = state.words.map(w => Array.from({length:w.length}, ()=> null));
-  state.entries= state.words.map(w => Array.from({length:w.length}, ()=> ''));
-  state.flowIndex = state.words.map(()=>0);
-  state.persistentNear = state.words.map(w => Array.from({length:w.length}, () => false));
+    state.solvedWord = state.words.map(()=> false);
+    state.locks  = state.words.map(w => Array.from({length:w.length}, ()=> null));
+    state.entries= state.words.map(w => Array.from({length:w.length}, ()=> ''));
+    state.flowIndex = state.words.map(()=>0);
+    state.persistentNear = state.words.map(w => Array.from({length:w.length}, () => false));
+  }
+  
   _inTourMode = true;
   setBadge('none');
   rebuildUIFromState();
@@ -2154,19 +2213,33 @@ function startTour(){
       // Custom navigation to handle step transitions
       onBeforeStepChange: (oldStep, newStep) => {
         // When user clicks Next on "Your Turn to Solve!" step, prevent navigation
-        // and instead hide the dialog so they can play
+        // and instead show pink spotlight on the entire game area so they can play
         if(oldStep === TOUR_STEP_YOUR_TURN && newStep === TOUR_STEP_COMPLETE && !_tourWaitingForCompletion) {
-          // First time clicking Next from "Your Turn" step - hide dialog and stay on this step
+          // First time clicking Next from "Your Turn" step - show spotlight and let them play
           _tourWaitingForCompletion = true;
-          // Hide the tour dialog to let user play
+          
+          // Save tour progress before hiding dialog
+          saveTourPuzzleProgress();
+          
+          // Hide the tour dialog but keep the backdrop highlighting the game area
           const dialogEl = document.querySelector('.tg-dialog');
-          const backdropEl = document.querySelector('.wz-tour-backdrop');
           if(dialogEl) {
             dialogEl.style.display = 'none';
           }
-          if(backdropEl) {
-            backdropEl.style.display = 'none';
+          
+          // Position the backdrop to highlight the entire stage (puzzle + keyboard)
+          const stageEl = document.getElementById('stage');
+          const backdropEl = document.querySelector('.wz-tour-backdrop');
+          if(stageEl && backdropEl) {
+            const rect = stageEl.getBoundingClientRect();
+            backdropEl.style.position = 'fixed';
+            backdropEl.style.top = `${rect.top}px`;
+            backdropEl.style.left = `${rect.left}px`;
+            backdropEl.style.width = `${rect.width}px`;
+            backdropEl.style.height = `${rect.height}px`;
+            backdropEl.style.pointerEvents = 'none'; // Allow clicks through to the game
           }
+          
           // Prevent navigation - stay at step 5
           return false;
         }
@@ -2185,6 +2258,9 @@ function startTour(){
     });
 
     _tgInstance.onAfterExit(() => {
+      // Save tour progress before exiting
+      saveTourPuzzleProgress();
+      
       // Always clean up flags, but only restore state if not waiting for puzzle completion
       if(_tourWaitingForCompletion) {
         // User is solving the puzzle - keep tour mode active but don't restore
