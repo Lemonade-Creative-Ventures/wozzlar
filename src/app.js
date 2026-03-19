@@ -1184,11 +1184,6 @@ function submitActiveWord(){
   paintRows(); updateControlsState(); renderSideTags(wi);
   renderKeyCounters();
   saveDailyState();
-  
-  // Save tour progress after each guess during tour mode
-  if(_inTourMode){
-    saveTourPuzzleProgress();
-  }
 }
 
 function renderReveal(wi, guess, scores){
@@ -2026,16 +2021,44 @@ let _tourWaitingForCompletion = false; // Flag to track if we're waiting for puz
 const TOUR_STEP_YOUR_TURN = 5; // Index of "Your Turn to Solve!" step
 const TOUR_STEP_COMPLETE = 6; // Index of "Puzzle Complete!" step
 
-function saveTourState(){
-  // Save the current daily puzzle state before entering tour
-  // We need to serialize Sets properly
-  const stateToSave = {
-    ...state,
-    inPhrase: Array.from(state.inPhrase),
+function serializeStateForStorage(stateObj){
+  // Helper to convert Sets to arrays for JSON serialization
+  return {
+    ...stateObj,
+    inPhrase: Array.from(stateObj.inPhrase),
     wordsContaining: Object.fromEntries(
-      Object.entries(state.wordsContaining).map(([k, v]) => [k, Array.from(v)])
+      Object.entries(stateObj.wordsContaining).map(([k, v]) => [k, Array.from(v)])
     )
   };
+}
+
+function deserializeStateFromStorage(serializedState){
+  // Helper to convert arrays back to Sets after JSON deserialization
+  return {
+    ...serializedState,
+    inPhrase: new Set(serializedState.inPhrase),
+    wordsContaining: Object.fromEntries(
+      Object.entries(serializedState.wordsContaining).map(([k, v]) => [k, new Set(v)])
+    )
+  };
+}
+
+function positionBackdropToElement(backdropEl, targetEl){
+  // Helper to position backdrop to highlight a specific element
+  if(backdropEl && targetEl){
+    const rect = targetEl.getBoundingClientRect();
+    backdropEl.style.position = 'fixed';
+    backdropEl.style.top = `${rect.top}px`;
+    backdropEl.style.left = `${rect.left}px`;
+    backdropEl.style.width = `${rect.width}px`;
+    backdropEl.style.height = `${rect.height}px`;
+    backdropEl.style.pointerEvents = 'none'; // Allow clicks through to the element
+  }
+}
+
+function saveTourState(){
+  // Save the current daily puzzle state before entering tour
+  const stateToSave = serializeStateForStorage(state);
   _tourState = {
     savedState: JSON.parse(JSON.stringify(stateToSave)),
     savedDaily: localStorage.getItem(todayKey())
@@ -2045,13 +2068,7 @@ function saveTourState(){
 function restoreTourState(){
   // Restore the daily puzzle state after tour
   if(_tourState){
-    state = _tourState.savedState;
-    
-    // Restore Sets from arrays
-    state.inPhrase = new Set(state.inPhrase);
-    state.wordsContaining = Object.fromEntries(
-      Object.entries(state.wordsContaining).map(([k, v]) => [k, new Set(v)])
-    );
+    state = deserializeStateFromStorage(_tourState.savedState);
     
     if(_tourState.savedDaily){
       localStorage.setItem(todayKey(), _tourState.savedDaily);
@@ -2076,13 +2093,7 @@ function restoreTourState(){
 function saveTourPuzzleProgress(){
   // Save the current tour puzzle progress to localStorage
   if(_inTourMode && state){
-    const progressToSave = {
-      ...state,
-      inPhrase: Array.from(state.inPhrase),
-      wordsContaining: Object.fromEntries(
-        Object.entries(state.wordsContaining).map(([k, v]) => [k, Array.from(v)])
-      )
-    };
+    const progressToSave = serializeStateForStorage(state);
     try{
       localStorage.setItem('wozzlar_tour_progress', JSON.stringify(progressToSave));
     }catch(e){
@@ -2097,12 +2108,7 @@ function loadTourPuzzleProgress(){
     const saved = localStorage.getItem('wozzlar_tour_progress');
     if(saved){
       const progressData = JSON.parse(saved);
-      // Restore Sets from arrays
-      progressData.inPhrase = new Set(progressData.inPhrase);
-      progressData.wordsContaining = Object.fromEntries(
-        Object.entries(progressData.wordsContaining).map(([k, v]) => [k, new Set(v)])
-      );
-      return progressData;
+      return deserializeStateFromStorage(progressData);
     }
   }catch(e){
     console.warn('wozzlar: could not load tour progress', e);
@@ -2230,15 +2236,7 @@ function startTour(){
           // Position the backdrop to highlight the entire stage (puzzle + keyboard)
           const stageEl = document.getElementById('stage');
           const backdropEl = document.querySelector('.wz-tour-backdrop');
-          if(stageEl && backdropEl) {
-            const rect = stageEl.getBoundingClientRect();
-            backdropEl.style.position = 'fixed';
-            backdropEl.style.top = `${rect.top}px`;
-            backdropEl.style.left = `${rect.left}px`;
-            backdropEl.style.width = `${rect.width}px`;
-            backdropEl.style.height = `${rect.height}px`;
-            backdropEl.style.pointerEvents = 'none'; // Allow clicks through to the game
-          }
+          positionBackdropToElement(backdropEl, stageEl);
           
           // Prevent navigation - stay at step 5
           return false;
