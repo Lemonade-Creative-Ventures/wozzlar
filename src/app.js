@@ -970,24 +970,50 @@ function typeLetter(ch){
   saveDailyState();
 }
 
+/**
+ * Finds the next unlocked position in a word, searching forward first then backward.
+ * @param {number} wi - Word index
+ * @param {number} startPos - Starting position to search from
+ * @param {number} L - Length of the word (number of tiles/positions)
+ * @returns {number} Index of next unlocked position, or -1 if none found
+ */
+function findNextUnlockedPos(wi, startPos, L){
+  // Try forward first
+  let pos = startPos + 1;
+  while(pos < L && isLocked(wi, pos)){ pos++; }
+  if(pos < L) return pos;
+  
+  // No unlocked position forward, try backward from start
+  pos = startPos - 1;
+  while(pos >= 0 && isLocked(wi, pos)){ pos--; }
+  return pos; // Returns -1 if no unlocked position found
+}
+
 function typeNormal(ch){
   const wi = state.active; if(state.solvedWord[wi]) return;
   const L = state.entries[wi].length;
   let pos = Math.max(0, Math.min(state.flowIndex[wi] || 0, L-1));
+  
+  // If current position is locked (pink tile), skip to next unlocked position
   if(isLocked(wi,pos)){
-    state.flowIndex[wi] = Math.min(pos + 1, L-1);
-    paintRows(); updateNormalCaretHighlight(); updateControlsState();
-    return;
+    const unlockedPos = findNextUnlockedPos(wi, pos, L);
+    if(unlockedPos < 0){
+      // All positions are locked, do nothing
+      paintRows(); updateNormalCaretHighlight(); updateControlsState();
+      return;
+    }
+    pos = unlockedPos;
   }
-  if(state.entries[wi][pos] === ''){
-    state.entries[wi][pos] = ch;
-    pos++;
-  } else {
-    let p2 = pos + 1;
-    while(p2 < L && (isLocked(wi,p2) || state.entries[wi][p2] !== '')) p2++;
-    if(p2 < L){ state.entries[wi][p2] = ch; pos = p2 + 1; }
-  }
-  state.flowIndex[wi] = Math.min(pos, L-1);
+  
+  // Replace letter at current position (whether empty or filled)
+  state.entries[wi][pos] = ch;
+  
+  // Move to next unlocked position (searches forward then backward)
+  const nextPos = findNextUnlockedPos(wi, pos, L);
+  // If no unlocked position found, stay at current position
+  // (current position is guaranteed unlocked by the check above)
+  state.flowIndex[wi] = nextPos >= 0 ? nextPos : pos;
+  
   paintRows(); updateNormalCaretHighlight(); updateControlsState();
 }
 
