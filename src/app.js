@@ -399,6 +399,7 @@ const feedbackLink = document.getElementById('feedbackLink');
 let practicePuzzlesCompleted = 0;
 let isShowingPracticeCompletion = false;
 const howToPlayLink = document.getElementById('howToPlayLink');
+const rulesLink = document.getElementById('rulesLink');
 const a2hsLink   = document.getElementById('a2hsLink');
 const contactLink = document.getElementById('contactLink');
 
@@ -434,7 +435,7 @@ function todayKey(){
   return `wozzlar_daily_${y}-${m}-${day}`;
 }
 function saveDailyState(){
-  if(state.isPractice || _inTourMode) return;
+  if(state.isPractice || _inTutorialMode) return;
   const payload = {
     puzzleNumber: currentPuzzleNumber(),
     words: state.words,
@@ -1049,6 +1050,9 @@ function incrementGuessCount(opts = {}){
 
   if(skipOverlays) return;
 
+  // Don't show guess limit overlays during tutorial
+  if(_inTutorialMode) return;
+
   if(!state.isPractice){
     if(state.guessCount === TOTAL_GUESS_LIMIT - 1 && !isPuzzleSolved()){
       showLastChanceOverlay();
@@ -1182,6 +1186,12 @@ function submitActiveWord(){
 
   state.history.push({ wi, guess, scores });
   incrementGuessCount();
+  
+  // Tutorial trigger: first guess made
+  if(_inTutorialMode && !_tutorialFirstGuess){
+    _tutorialFirstGuess = true;
+    triggerTutorialStep('first-guess');
+  }
 
   if(guess === target){
     state.solvedWord[wi] = true;
@@ -1264,31 +1274,10 @@ function clearStatsBlocks(){
 }
 
 function showCompletionOverlay(fromAllIn){
-  // During tour mode, show the final step when puzzle is completed
-  if(_inTourMode && _tourWaitingForCompletion) {
-    if(_tgInstance && isPuzzleSolved()){
-      // Show only the final "Puzzle Complete" step
-      // Reset the waiting flag BEFORE visiting the final step
-      // This ensures that when the user closes the final step, onAfterExit
-      // will see _tourWaitingForCompletion=false and proceed with normal cleanup
-      _tourWaitingForCompletion = false;
-      // Show the dialog again and jump to final step
-      const dialogEl = document.querySelector('.tg-dialog');
-      const backdropEl = document.querySelector('.wz-tour-backdrop');
-      if(dialogEl) {
-        dialogEl.style.display = '';
-      }
-      if(backdropEl) {
-        backdropEl.style.display = '';
-      }
-      // Visit the final step
-      _tgInstance.visitStep(TOUR_STEP_COMPLETE);
-    }
-    return;
-  }
-  
-  // If in tour mode but not waiting for completion, just return
-  if(_inTourMode) {
+  // During tutorial mode, show the completion step
+  if(_inTutorialMode) {
+    _tutorialCompleted = true;
+    triggerTutorialStep('puzzle-solved');
     return;
   }
   
@@ -1777,6 +1766,50 @@ howToPlayLink.addEventListener('click', (e)=>{
   startTour(); // Use tour guide instead of static instructions
 });
 
+rulesLink.addEventListener('click', (e)=>{
+  e.preventDefault();
+  menu.classList.remove('show');
+  hamburger.setAttribute('aria-expanded','false');
+  showRulesModal();
+});
+
+function showRulesModal(){
+  setModalCloseCancelsAllIn(false);
+  modalTitle.textContent = "Rules";
+  modalMeta.hidden = true;
+  modalMsg.textContent = "";
+  modalCustom.innerHTML = `
+    <h3 style="margin-top:0">🎯 Objective</h3>
+    <p>Solve the phrase in as few guesses as possible. Each guess is a single word that matches the letter count of any word in the phrase.</p>
+    
+    <h3 style="margin-top:16px">🎨 Color Feedback</h3>
+    <p><span style="color:#FF4FA3;font-weight:800">■ Pink</span> means the letter is in the word <strong>in the correct spot</strong>.</p>
+    <p><span style="color:#3FCBFF;font-weight:800">■ Blue</span> means the letter is in the word but <strong>in the wrong spot</strong>.</p>
+    <p><span style="color:#666;font-weight:800">■ Gray</span> means the letter is <strong>not in that word</strong>.</p>
+    
+    <h3 style="margin-top:16px">⌨️ Keyboard Hints</h3>
+    <p>Small <span style="display:inline-block;width:10px;height:10px;background:#3FCBFF;border-radius:2px;vertical-align:middle;"></span> blue squares on keyboard keys show how many times that letter still needs to be placed in the phrase.</p>
+    
+    <h3 style="margin-top:16px">📝 Guessed Words</h3>
+    <p>Your guesses appear on the left side. <u>Underlined letters</u> indicate letters that are somewhere in the phrase.</p>
+    
+    <h3 style="margin-top:16px">💪 ALL IN</h3>
+    <p>Attempt the entire phrase at once. Costs one guess. If you miss, you earn the <strong>🎺 Super Womp</strong> badge — but if you're correct, you get instant glory!</p>
+    
+    <h3 style="margin-top:16px">🏆 Badges</h3>
+    <p><strong>🏆 Wozzlar</strong> = Solved in 7 guesses or fewer</p>
+    <p><strong>😐 Womp</strong> = Solved in 8+ guesses</p>
+    <p><strong>🎺 Super Womp</strong> = Failed ALL IN attempt</p>
+    
+    <h3 style="margin-top:16px">📅 Daily Puzzle</h3>
+    <p>A new puzzle drops every day. Solve it and share your results with friends!</p>
+  `;
+  clearStatsBlocks();
+  setActions({closeText:"Close", primaryText:null, onPrimary:null, showShare:false});
+  modalEl.classList.add('show');
+}
+
+
 /* ===== Add to Home Screen ===== */
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const INSTALL_PROMPT_DISMISS_DAYS = 7;
@@ -2039,17 +2072,29 @@ function showHowToPlay(){
   modalEl.classList.add('show');
 }
 
-/* ===== TOUR GUIDE ===== */
-let _tgInstance = null;
-let _tourState = null; // Stores daily puzzle state during tour
-let _inTourMode = false; // Flag to track if we're in tour mode
-let _tourWaitingForCompletion = false; // Flag to track if we're waiting for puzzle completion after step 5
-const TOUR_STEP_YOUR_TURN = 5; // Index of "Your Turn to Solve!" step
-const TOUR_STEP_COMPLETE = 6; // Index of "Puzzle Complete!" step
+/* ===== TUTORIAL (Playable Onboarding) ===== */
+let _tutorialState = null; // Stores daily puzzle state during tutorial
+let _inTutorialMode = false; // Flag to track if we're in tutorial mode
+let _currentTutorialStep = 0; // Current tutorial step
+let _tutorialCompleted = false; // Whether puzzle was completed during tutorial
+let _tutorialFirstGuess = false; // Track if user has made first guess
 
-function saveTourState(){
-  // Save the current daily puzzle state before entering tour
-  // We need to serialize Sets properly
+// Tutorial steps - minimal microcopy only
+const TUTORIAL_STEPS = [
+  { id: 'welcome-goal', trigger: 'start', delay: 500 }, // Explain the goal
+  { id: 'welcome-theme', trigger: 'manual-next', delay: 0 }, // Explain themes
+  { id: 'welcome-daily', trigger: 'manual-next', delay: 0 }, // Explain daily puzzles
+  { id: 'type-guess', trigger: 'manual-next', delay: 500 }, // Start typing instruction
+  { id: 'colors', trigger: 'first-guess', delay: 800 },
+  { id: 'keyboard-hints', trigger: 'manual-next', delay: 0 }, // User clicks "Got it!" to continue
+  { id: 'guessed-words', trigger: 'manual-next', delay: 0 }, // User clicks "Next" to continue
+  { id: 'all-in', trigger: 'manual-next', delay: 0 }, // Explain ALL IN feature
+  { id: 'keep-solving', trigger: 'manual-next', delay: 0 }, // Invite to continue solving
+  { id: 'complete', trigger: 'puzzle-solved', delay: 500 }
+];
+
+function saveTutorialState(){
+  // Save the current daily puzzle state before entering tutorial
   const stateToSave = {
     ...state,
     inPhrase: Array.from(state.inPhrase),
@@ -2057,16 +2102,16 @@ function saveTourState(){
       Object.entries(state.wordsContaining).map(([k, v]) => [k, Array.from(v)])
     )
   };
-  _tourState = {
+  _tutorialState = {
     savedState: JSON.parse(JSON.stringify(stateToSave)),
     savedDaily: localStorage.getItem(todayKey())
   };
 }
 
-function restoreTourState(){
-  // Restore the daily puzzle state after tour
-  if(_tourState){
-    state = _tourState.savedState;
+function restoreTutorialState(){
+  // Restore the daily puzzle state after tutorial
+  if(_tutorialState){
+    state = _tutorialState.savedState;
     
     // Restore Sets from arrays
     state.inPhrase = new Set(state.inPhrase);
@@ -2074,11 +2119,13 @@ function restoreTourState(){
       Object.entries(state.wordsContaining).map(([k, v]) => [k, new Set(v)])
     );
     
-    if(_tourState.savedDaily){
-      localStorage.setItem(todayKey(), _tourState.savedDaily);
+    if(_tutorialState.savedDaily){
+      localStorage.setItem(todayKey(), _tutorialState.savedDaily);
     }
-    _tourState = null;
-    _inTourMode = false;
+    _tutorialState = null;
+    _inTutorialMode = false;
+    _tutorialCompleted = false;
+    _tutorialFirstGuess = false;
     rebuildUIFromState();
     renderKeyCounters();
     paintRows();
@@ -2086,10 +2133,10 @@ function restoreTourState(){
   }
 }
 
-function loadTourPuzzle(){
-  // Initialize game with the WORD WIZARD puzzle for the tour
-  const puz = TOUR_PUZZLE;
-  state = baseState(puz, "Tour", null);
+function loadTutorialPuzzle(){
+  // Initialize game with the WORD WIZARD puzzle for the tutorial
+  const puz = TOUR_PUZZLE; // Reuse TOUR_PUZZLE constant (WORD WIZARD)
+  state = baseState(puz, "Tutorial", null);
   state.words.forEach((w, wi) => {
     w.split('').forEach(c => {
       if(/[A-Z]/.test(c)){
@@ -2103,135 +2150,281 @@ function loadTourPuzzle(){
   state.entries= state.words.map(w => Array.from({length:w.length}, ()=> ''));
   state.flowIndex = state.words.map(()=>0);
   state.persistentNear = state.words.map(w => Array.from({length:w.length}, () => false));
-  _inTourMode = true;
+  _inTutorialMode = true;
   setBadge('none');
   rebuildUIFromState();
   renderKeyCounters();
 }
 
-function startTour(){
-  if(typeof tourguide === 'undefined' || !tourguide.TourGuideClient){
-    showInfoModal("The tour guide couldn't load. Check your connection and try again.");
-    return;
+function createTutorialTooltip(id, content, target, position = 'bottom'){
+  // Remove any existing tooltip
+  const existing = document.querySelector('.tutorial-tooltip');
+  if(existing) existing.remove();
+  
+  // Create tooltip element
+  const tooltip = document.createElement('div');
+  tooltip.className = `tutorial-tooltip tutorial-${id}`;
+  tooltip.setAttribute('data-step', id);
+  tooltip.innerHTML = content;
+  
+  document.body.appendChild(tooltip);
+  
+  // Position tooltip relative to target
+  if(target){
+    const targetEl = typeof target === 'string' ? document.querySelector(target) : target;
+    if(targetEl){
+      const rect = targetEl.getBoundingClientRect();
+      const tooltipRect = tooltip.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      let top = 0;
+      let left = 0;
+      
+      if(position === 'bottom'){
+        top = rect.bottom + 16;
+        left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+      } else if(position === 'top'){
+        top = rect.top - tooltipRect.height - 16;
+        left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+      } else if(position === 'right'){
+        top = rect.top + (rect.height / 2) - (tooltipRect.height / 2);
+        left = rect.right + 16;
+      } else if(position === 'left'){
+        top = rect.top + (rect.height / 2) - (tooltipRect.height / 2);
+        left = rect.left - tooltipRect.width - 16;
+      } else if(position === 'center'){
+        tooltip.style.top = `50%`;
+        tooltip.style.left = `50%`;
+        tooltip.style.transform = `translate(-50%, -50%)`;
+        targetEl.classList.add('tutorial-highlight');
+        setTimeout(() => tooltip.classList.add('show'), 10);
+        return tooltip;
+      }
+      
+      // Ensure tooltip stays within viewport bounds
+      const padding = 16;
+      
+      // Check horizontal bounds
+      if(left < padding){
+        left = padding;
+      } else if(left + tooltipRect.width > viewportWidth - padding){
+        left = viewportWidth - tooltipRect.width - padding;
+      }
+      
+      // Check vertical bounds
+      if(top < padding){
+        top = padding;
+      } else if(top + tooltipRect.height > viewportHeight - padding){
+        top = viewportHeight - tooltipRect.height - padding;
+      }
+      
+      tooltip.style.top = `${top}px`;
+      tooltip.style.left = `${left}px`;
+      
+      // Add highlight to target
+      targetEl.classList.add('tutorial-highlight');
+    }
+  } else {
+    // Center tooltip
+    tooltip.style.top = `50%`;
+    tooltip.style.left = `50%`;
+    tooltip.style.transform = `translate(-50%, -50%)`;
   }
+  
+  // Animate in
+  setTimeout(() => tooltip.classList.add('show'), 10);
+  
+  return tooltip;
+}
 
+function removeTutorialTooltip(){
+  const tooltip = document.querySelector('.tutorial-tooltip');
+  if(tooltip){
+    tooltip.classList.remove('show');
+    setTimeout(() => tooltip.remove(), 300);
+  }
+  // Remove all highlights
+  document.querySelectorAll('.tutorial-highlight').forEach(el => {
+    el.classList.remove('tutorial-highlight');
+  });
+}
+
+function showTutorialStep(stepId){
+  removeTutorialTooltip();
+  
+  switch(stepId){
+    case 'welcome-goal':
+      createTutorialTooltip('welcome-goal', 
+        'The goal of Wozzlar is to solve the phrase in as few guesses as possible.<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Next</button>', 
+        null, 'center');
+      break;
+      
+    case 'welcome-theme':
+      createTutorialTooltip('welcome-theme', 
+        'Every puzzle has a theme. For example, "Food and Drink" or "Famous Places" — this tutorial\'s theme is "Magic".<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Next</button>', 
+        null, 'center');
+      break;
+      
+    case 'welcome-daily':
+      createTutorialTooltip('welcome-daily', 
+        'Come back daily for a new puzzle — and if you\'d like, you can share your results with friends and family.<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Let\'s Play!</button>', 
+        null, 'center');
+      break;
+      
+    case 'type-guess':
+      createTutorialTooltip('type-guess', 
+        '⌨️ Type any 4-letter word, then press ENTER', 
+        '#kb', 'top');
+      break;
+      
+    case 'colors':
+      createTutorialTooltip('colors', 
+        '<span style="color:#FF4FA3">■ Pink</span> = right spot<br><span style="color:#3FCBFF">■ Blue</span> = wrong spot<br>Don\'t see any colours? Try a new word, then press ENTER.<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Got it!</button>', 
+        '#phrase', 'bottom');
+      
+      // After 3 seconds, move tooltip below keyboard
+      setTimeout(() => {
+        const tooltip = document.querySelector('.tutorial-tooltip[data-step="colors"]');
+        if(tooltip && _inTutorialMode){
+          const kb = document.querySelector('#kb');
+          if(kb){
+            const rect = kb.getBoundingClientRect();
+            const tooltipRect = tooltip.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            const viewportWidth = window.innerWidth;
+            
+            let top = rect.bottom + 16;
+            let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+            
+            // Ensure tooltip stays within viewport bounds
+            const padding = 16;
+            if(left < padding){
+              left = padding;
+            } else if(left + tooltipRect.width > viewportWidth - padding){
+              left = viewportWidth - tooltipRect.width - padding;
+            }
+            if(top + tooltipRect.height > viewportHeight - padding){
+              top = viewportHeight - tooltipRect.height - padding;
+            }
+            
+            tooltip.style.top = `${top}px`;
+            tooltip.style.left = `${left}px`;
+          }
+        }
+      }, 3000);
+      break;
+      
+    case 'keyboard-hints':
+      createTutorialTooltip('keyboard-hints', 
+        '<span style="display:inline-block;width:20px;height:20px;background:#3FCBFF;border-radius:4px;vertical-align:middle;margin-right:6px;"></span>Blue squares show letters remaining in the puzzle.<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Next</button>', 
+        '#kb', 'bottom');
+      break;
+      
+    case 'guessed-words':
+      // Find the first guessed word on the left side
+      const firstGuess = document.querySelector('.side-tags.left .tag');
+      if(firstGuess){
+        createTutorialTooltip('guessed-words', 
+          '📝 Your guesses appear here<br><u>Underlined letters</u> are in the word<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Next</button>', 
+          firstGuess, 'right');
+      }
+      break;
+      
+    case 'all-in':
+      createTutorialTooltip('all-in', 
+        '💪 ALL IN lets you attempt the entire phrase at once — but if you miss, you get the Super Womp badge.<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Got it!</button>', 
+        '#kb', 'bottom');
+      break;
+      
+    case 'keep-solving':
+      createTutorialTooltip('keep-solving', 
+        '🎯 Ready to solve the rest? Keep guessing!<br><button class="tutorial-continue-btn" onclick="dismissTutorialTooltip()">Continue Playing</button>', 
+        null, 'center');
+      break;
+      
+    case 'complete':
+      createTutorialTooltip('complete', 
+        '✨ Amazing! Ready for today\'s puzzle?<br><span style="font-size:0.85em;opacity:0.85;display:block;margin-top:8px;">Tip: Access the tutorial or rules anytime from the menu.</span><br><button class="tutorial-continue-btn" onclick="finishTutorial()">Let\'s Go!</button>', 
+        null, 'center');
+      break;
+  }
+}
+
+function triggerTutorialStep(trigger){
+  if(!_inTutorialMode) return;
+  
+  const step = TUTORIAL_STEPS.find(s => s.trigger === trigger && s.id !== TUTORIAL_STEPS[_currentTutorialStep]?.id);
+  if(step){
+    const stepIndex = TUTORIAL_STEPS.indexOf(step);
+    if(stepIndex > _currentTutorialStep){
+      _currentTutorialStep = stepIndex;
+      setTimeout(() => {
+        showTutorialStep(step.id);
+      }, step.delay || 0);
+    }
+  }
+}
+
+// New function to advance to next tutorial step manually
+function nextTutorialStep(){
+  if(!_inTutorialMode) return;
+  
+  // Advance to the next step
+  const nextStepIndex = _currentTutorialStep + 1;
+  if(nextStepIndex < TUTORIAL_STEPS.length){
+    const nextStep = TUTORIAL_STEPS[nextStepIndex];
+    _currentTutorialStep = nextStepIndex;
+    setTimeout(() => showTutorialStep(nextStep.id), nextStep.delay || 0);
+  }
+}
+
+// Make nextTutorialStep globally available for onclick handler
+window.nextTutorialStep = nextTutorialStep;
+
+// Function to dismiss tutorial tooltip without advancing
+function dismissTutorialTooltip(){
+  removeTutorialTooltip();
+}
+
+// Make dismissTutorialTooltip globally available for onclick handler
+window.dismissTutorialTooltip = dismissTutorialTooltip;
+
+function startTutorial(){
   menu.classList.remove('show');
   hamburger.setAttribute('aria-expanded','false');
 
-  // Save current state and load tour puzzle (only if not already in tour mode)
-  if(!_inTourMode){
-    saveTourState();
-    loadTourPuzzle();
-  }
-  // If already in tour mode, don't reload - just restart the tour guide
-
-  // Tour step configuration
-  const TOUR_STEPS = [
-        {
-          title: "Let's Play! 🧙‍♂️",
-          content: "You'll solve this phrase word by word. Let me show you how the game works as you play!",
-        },
-        {
-          target: "#phrase",
-          title: "Your Mystery Phrase",
-          content: "Two words to discover. The first word has <strong>4 letters</strong>. Click the top row to start working on it.",
-        },
-        {
-          target: "#kb",
-          title: "Make Your First Guess",
-          content: "Type any 4-letter word you want and press <strong>ENTER</strong>. Go ahead, try it! I'll wait... ⏸️",
-        },
-        {
-          target: "#phrase",
-          title: "See the Colors?",
-          content: "<span style='color:#FF4FA3;font-weight:800'>■ Pink</span> means correct letter, correct spot!<br><span style='color:#3FCBFF;font-weight:800'>■ Blue</span> means letter is in the word but wrong spot.<br><br><span style='font-family:\"Kalam\",system-ui,sans-serif;font-weight:700;color:#7fc9ff;'>Little blue words</span> to the left of the puzzle words are the ones you have guessed. If one of the letters is <span style='font-family:\"Kalam\",system-ui,sans-serif;font-weight:700;color:#7fc9ff;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:2px;'>Underlined</span>, the letter is in the word, but in the wrong position.",
-        },
-        {
-          target: "#kb",
-          title: "Your Keyboard Learns",
-          content: "The keyboard now shows which letters you've tried. Use what you learned to guess again!<br><br><strong>Blue squares</strong> on available keys show how many more of that letter remain in the puzzle.<br><br>Want to solve the whole puzzle at once? Use the <strong>ALL IN</strong> button for high stakes!",
-        },
-        {
-          title: "Your Turn to Solve! 🎮",
-          content: "Now use what you've learned to solve the puzzle! Try different combinations based on the color clues.<br><br>Need help? Tap the menu and select <strong>How to Play</strong> anytime to review the instructions.",
-        },
-        {
-          target: "#phrase",
-          title: "Puzzle Complete! 🎉",
-          content: "Magical work, my friend. You will be a word wizard in no time! 🧙‍♂️✨<br><br><strong>Daily puzzles</strong> give you 7 guesses total. Solve it to earn badges and build your streak!<br><br>Ready to play today's real puzzle?",
-        },
-      ];
-  
-  const FINAL_TOUR_STEP_INDEX = TOUR_STEPS.length - 1;
-
-  // Create the instance once to avoid duplicate DOM nodes
-  if(!_tgInstance){
-    _tgInstance = new tourguide.TourGuideClient({
-      steps: TOUR_STEPS,
-      debug: false,
-      exitOnClickOutside: false,
-      nextLabel: "Next →",
-      prevLabel: "← Back",
-      finishLabel: "Let's Play Today's Puzzle!",
-      dialogMaxWidth: 360,
-      backdropClass: "wz-tour-backdrop",
-      dialogClass: "wz-tour-dialog",
-      
-      // Custom navigation to handle step transitions
-      onBeforeStepChange: (oldStep, newStep) => {
-        // When user clicks Next on "Your Turn to Solve!" step, prevent navigation
-        // and instead hide the dialog so they can play
-        if(oldStep === TOUR_STEP_YOUR_TURN && newStep === TOUR_STEP_COMPLETE && !_tourWaitingForCompletion) {
-          // First time clicking Next from "Your Turn" step - hide dialog and stay on this step
-          _tourWaitingForCompletion = true;
-          // Hide the tour dialog to let user play
-          const dialogEl = document.querySelector('.tg-dialog');
-          const backdropEl = document.querySelector('.wz-tour-backdrop');
-          if(dialogEl) {
-            dialogEl.style.display = 'none';
-          }
-          if(backdropEl) {
-            backdropEl.style.display = 'none';
-          }
-          // Prevent navigation - stay at step 5
-          return false;
-        }
-        
-        // If trying to go to completion step when puzzle not solved, prevent it
-        if(newStep === TOUR_STEP_COMPLETE && !isPuzzleSolved()){
-          return false;
-        }
-        
-        return true;
-      },
-      
-      onAfterStepChange: (step) => {
-        // No special handling needed here anymore
-      },
-    });
-
-    _tgInstance.onAfterExit(() => {
-      // Always clean up flags, but only restore state if not waiting for puzzle completion
-      if(_tourWaitingForCompletion) {
-        // User is solving the puzzle - keep tour mode active but don't restore
-        // State will be restored when they complete the puzzle and close the final step
-        return;
-      }
-      // Normal exit - restore state and clean up
-      _inTourMode = false;
-      _tourWaitingForCompletion = false;
-      restoreTourState();
-      try{ localStorage.setItem('wozzlar_tour_seen_v1','1'); }catch(e){ console.warn('wozzlar: could not save tour state', e); }
-    });
+  // Save current state and load tutorial puzzle
+  if(!_inTutorialMode){
+    saveTutorialState();
+    loadTutorialPuzzle();
   }
 
-  // Sync backdrop color with the current day/night theme each time the tour starts.
-  const isDay = document.body.classList.contains('day');
-  _tgInstance.setOptions({ backdropColor: isDay ? "rgba(15,18,32,0.45)" : "rgba(0,0,0,0.80)" });
-
-  // Start the tour
-  _tgInstance.start();
+  // Start with type-guess step directly
+  _currentTutorialStep = 0;
+  const firstStep = TUTORIAL_STEPS[0];
+  setTimeout(() => showTutorialStep(firstStep.id), firstStep.delay || 0);
 }
+
+function finishTutorial(){
+  removeTutorialTooltip();
+  _inTutorialMode = false;
+  _tutorialCompleted = true;
+  
+  // Mark tutorial as seen
+  try{ localStorage.setItem('wozzlar_tutorial_seen_v1','1'); }catch(e){}
+  
+  // Restore daily puzzle
+  restoreTutorialState();
+}
+
+// Keep old function name for backwards compatibility in HTML/menu
+function startTour(){
+  startTutorial();
+}
+
+// Make finishTutorial globally available for onclick handler in tooltip button
+window.finishTutorial = finishTutorial;
 
 /* ===== Init & navigation safety ===== */
 async function goToDaily(){
@@ -2278,11 +2471,11 @@ function initSplashScreen(){
   splashPlayBtn.addEventListener('click', ()=>{
     hideSplashScreen();
     
-    // Auto-start tour for first-time visitors after splash
-    if(!localStorage.getItem('wozzlar_tour_seen_v1')){
-      setTimeout(startTour, 500);
+    // Auto-start tutorial for first-time visitors after splash
+    if(!localStorage.getItem('wozzlar_tutorial_seen_v1')){
+      setTimeout(startTutorial, 500);
     } else {
-      // Show install prompt only if tour has been seen
+      // Show install prompt only if tutorial has been seen
       showInstallPrompt();
     }
   });
