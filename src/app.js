@@ -1776,7 +1776,9 @@ rulesLink.addEventListener('click', (e)=>{
 function showRulesModal(){
   setModalCloseCancelsAllIn(false);
   modalTitle.textContent = "Rules";
-  modalBody.innerHTML = `
+  modalMeta.hidden = true;
+  modalMsg.textContent = "";
+  modalCustom.innerHTML = `
     <h3 style="margin-top:0">🎯 Objective</h3>
     <p>Solve the phrase in as few guesses as possible. Each guess is a single word that matches the letter count of any word in the phrase.</p>
     
@@ -1802,8 +1804,9 @@ function showRulesModal(){
     <h3 style="margin-top:16px">📅 Daily Puzzle</h3>
     <p>A new puzzle drops every day. Solve it and share your results with friends!</p>
   `;
-  modalActions.innerHTML = `<button class="btn" onclick="closeModal()">Close</button>`;
-  modal.style.display = 'flex';
+  clearStatsBlocks();
+  setActions({closeText:"Close", primaryText:null, onPrimary:null, showShare:false});
+  modalEl.classList.add('show');
 }
 
 
