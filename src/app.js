@@ -622,8 +622,8 @@ function setActive(i){
   updateControlsState();
   saveDailyState();
   
-  // Tutorial trigger: word selected
-  if(_inTutorialMode && _currentTutorialStep === 1){
+  // Tutorial trigger: word selected (step 1 = tap-word, step 2 = type-guess)
+  if(_inTutorialMode && _currentTutorialStep >= 1 && _currentTutorialStep < 3){
     triggerTutorialStep('word-selected');
   }
 }
@@ -1053,6 +1053,9 @@ function incrementGuessCount(opts = {}){
   for(let i=0;i<BRAND_LETTERS.length;i++){ BRAND_LETTERS[i].classList.toggle('lit', i < state.guessCount); }
 
   if(skipOverlays) return;
+
+  // Don't show guess limit overlays during tutorial
+  if(_inTutorialMode) return;
 
   if(!state.isPractice){
     if(state.guessCount === TOTAL_GUESS_LIMIT - 1 && !isPuzzleSolved()){
@@ -2038,10 +2041,12 @@ let _tutorialFirstGuess = false; // Track if user has made first guess
 
 // Tutorial steps - minimal microcopy only
 const TUTORIAL_STEPS = [
-  { id: 'welcome', trigger: 'auto', delay: 500 },
-  { id: 'tap-word', trigger: 'auto', delay: 2000 },
+  { id: 'welcome', trigger: 'manual', delay: 500 }, // Changed to manual - user must click to start
+  { id: 'tap-word', trigger: 'start', delay: 500 },
   { id: 'type-guess', trigger: 'word-selected', delay: 500 },
   { id: 'colors', trigger: 'first-guess', delay: 800 },
+  { id: 'keyboard-hints', trigger: 'auto-after-colors', delay: 2500 }, // New step for keyboard explanation
+  { id: 'guessed-words', trigger: 'auto-after-keyboard', delay: 2500 }, // New step for guessed words
   { id: 'complete', trigger: 'puzzle-solved', delay: 500 }
 ];
 
@@ -2127,18 +2132,52 @@ function createTutorialTooltip(id, content, target, position = 'bottom'){
     if(targetEl){
       const rect = targetEl.getBoundingClientRect();
       const tooltipRect = tooltip.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      let top = 0;
+      let left = 0;
       
       if(position === 'bottom'){
-        tooltip.style.top = `${rect.bottom + 16}px`;
-        tooltip.style.left = `${rect.left + (rect.width / 2) - (tooltipRect.width / 2)}px`;
+        top = rect.bottom + 16;
+        left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
       } else if(position === 'top'){
-        tooltip.style.top = `${rect.top - tooltipRect.height - 16}px`;
-        tooltip.style.left = `${rect.left + (rect.width / 2) - (tooltipRect.width / 2)}px`;
+        top = rect.top - tooltipRect.height - 16;
+        left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+      } else if(position === 'right'){
+        top = rect.top + (rect.height / 2) - (tooltipRect.height / 2);
+        left = rect.right + 16;
+      } else if(position === 'left'){
+        top = rect.top + (rect.height / 2) - (tooltipRect.height / 2);
+        left = rect.left - tooltipRect.width - 16;
       } else if(position === 'center'){
         tooltip.style.top = `50%`;
         tooltip.style.left = `50%`;
         tooltip.style.transform = `translate(-50%, -50%)`;
+        targetEl.classList.add('tutorial-highlight');
+        setTimeout(() => tooltip.classList.add('show'), 10);
+        return tooltip;
       }
+      
+      // Ensure tooltip stays within viewport bounds
+      const padding = 16;
+      
+      // Check horizontal bounds
+      if(left < padding){
+        left = padding;
+      } else if(left + tooltipRect.width > viewportWidth - padding){
+        left = viewportWidth - tooltipRect.width - padding;
+      }
+      
+      // Check vertical bounds
+      if(top < padding){
+        top = padding;
+      } else if(top + tooltipRect.height > viewportHeight - padding){
+        top = viewportHeight - tooltipRect.height - padding;
+      }
+      
+      tooltip.style.top = `${top}px`;
+      tooltip.style.left = `${left}px`;
       
       // Add highlight to target
       targetEl.classList.add('tutorial-highlight');
@@ -2174,14 +2213,14 @@ function showTutorialStep(stepId){
   switch(stepId){
     case 'welcome':
       createTutorialTooltip('welcome', 
-        '🧙‍♂️ Solve this phrase!', 
+        '👋 Welcome to Wozzlar!<br><span style="font-size:0.9em;opacity:0.9;">Let\'s learn how to play</span><br><button class="tutorial-continue-btn" onclick="startTutorialSteps()">Start Tutorial</button>', 
         null, 'center');
       break;
       
     case 'tap-word':
       createTutorialTooltip('tap-word', 
         '👆 Tap the first word', 
-        '#phrase .row:first-child', 'top');
+        '#phrase .row:first-child', 'bottom');
       break;
       
     case 'type-guess':
@@ -2193,7 +2232,23 @@ function showTutorialStep(stepId){
     case 'colors':
       createTutorialTooltip('colors', 
         '<span style="color:#FF4FA3">■ Pink</span> = right spot<br><span style="color:#3FCBFF">■ Blue</span> = wrong spot<br>Keep guessing!', 
-        '#phrase', 'top');
+        '#phrase .row:first-child', 'bottom');
+      break;
+      
+    case 'keyboard-hints':
+      createTutorialTooltip('keyboard-hints', 
+        '💡 Blue squares show letters used in your guesses', 
+        '#kb', 'top');
+      break;
+      
+    case 'guessed-words':
+      // Find the first guessed word on the left side
+      const firstGuess = document.querySelector('#phrase .prev-guesses');
+      if(firstGuess && firstGuess.children.length > 0){
+        createTutorialTooltip('guessed-words', 
+          '📝 Your guesses appear here<br><u>Underlined letters</u> are in the word', 
+          firstGuess.children[0], 'right');
+      }
       break;
       
     case 'complete':
@@ -2212,10 +2267,38 @@ function triggerTutorialStep(trigger){
     const stepIndex = TUTORIAL_STEPS.indexOf(step);
     if(stepIndex > _currentTutorialStep){
       _currentTutorialStep = stepIndex;
-      setTimeout(() => showTutorialStep(step.id), step.delay || 0);
+      setTimeout(() => {
+        showTutorialStep(step.id);
+        
+        // Auto-advance from colors to keyboard-hints
+        if(step.id === 'colors'){
+          setTimeout(() => {
+            triggerTutorialStep('auto-after-colors');
+          }, 2500);
+        }
+        // Auto-advance from keyboard-hints to guessed-words
+        else if(step.id === 'keyboard-hints'){
+          setTimeout(() => {
+            triggerTutorialStep('auto-after-keyboard');
+          }, 2500);
+        }
+      }, step.delay || 0);
     }
   }
 }
+
+// New function called by the "Start Tutorial" button
+function startTutorialSteps(){
+  if(!_inTutorialMode) return;
+  
+  // Advance to step 1 (tap-word)
+  _currentTutorialStep = 1;
+  const step = TUTORIAL_STEPS[1];
+  setTimeout(() => showTutorialStep(step.id), step.delay || 0);
+}
+
+// Make startTutorialSteps globally available for onclick handler
+window.startTutorialSteps = startTutorialSteps;
 
 function startTutorial(){
   menu.classList.remove('show');
@@ -2227,17 +2310,10 @@ function startTutorial(){
     loadTutorialPuzzle();
   }
 
-  // Start with first step
+  // Start with welcome step (requires user click to continue)
   _currentTutorialStep = 0;
   const firstStep = TUTORIAL_STEPS[0];
   setTimeout(() => showTutorialStep(firstStep.id), firstStep.delay || 0);
-  
-  // Auto-advance to next step
-  setTimeout(() => {
-    _currentTutorialStep = 1;
-    const nextStep = TUTORIAL_STEPS[1];
-    showTutorialStep(nextStep.id);
-  }, TUTORIAL_STEPS[0].delay + 2000);
 }
 
 function finishTutorial(){
