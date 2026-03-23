@@ -2246,7 +2246,7 @@ function showTutorialStep(stepId){
       const firstGuess = document.querySelector('.side-tags.left .tag');
       if(firstGuess){
         createTutorialTooltip('guessed-words', 
-          '📝 Your guesses appear here<br><u>Underlined letters</u> are in the word<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Continue Playing</button>', 
+          '📝 Your guesses appear here<br><u>Underlined letters</u> are in the word<br><button class="tutorial-continue-btn" onclick="dismissTutorialTooltip()">Continue Playing</button>', 
           firstGuess, 'right');
       }
       break;
@@ -2304,6 +2304,14 @@ function nextTutorialStep(){
 
 // Make nextTutorialStep globally available for onclick handler
 window.nextTutorialStep = nextTutorialStep;
+
+// Function to dismiss tutorial tooltip without advancing
+function dismissTutorialTooltip(){
+  removeTutorialTooltip();
+}
+
+// Make dismissTutorialTooltip globally available for onclick handler
+window.dismissTutorialTooltip = dismissTutorialTooltip;
 
 function startTutorial(){
   menu.classList.remove('show');
