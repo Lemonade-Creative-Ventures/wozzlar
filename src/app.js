@@ -399,6 +399,7 @@ const feedbackLink = document.getElementById('feedbackLink');
 let practicePuzzlesCompleted = 0;
 let isShowingPracticeCompletion = false;
 const howToPlayLink = document.getElementById('howToPlayLink');
+const rulesLink = document.getElementById('rulesLink');
 const a2hsLink   = document.getElementById('a2hsLink');
 const contactLink = document.getElementById('contactLink');
 
@@ -1765,6 +1766,47 @@ howToPlayLink.addEventListener('click', (e)=>{
   startTour(); // Use tour guide instead of static instructions
 });
 
+rulesLink.addEventListener('click', (e)=>{
+  e.preventDefault();
+  menu.classList.remove('show');
+  hamburger.setAttribute('aria-expanded','false');
+  showRulesModal();
+});
+
+function showRulesModal(){
+  setModalCloseCancelsAllIn(false);
+  modalTitle.textContent = "Rules";
+  modalBody.innerHTML = `
+    <h3 style="margin-top:0">🎯 Objective</h3>
+    <p>Solve the phrase in as few guesses as possible. Each guess is a single word that matches the letter count of any word in the phrase.</p>
+    
+    <h3 style="margin-top:16px">🎨 Color Feedback</h3>
+    <p><span style="color:#FF4FA3;font-weight:800">■ Pink</span> means the letter is in the word <strong>in the correct spot</strong>.</p>
+    <p><span style="color:#3FCBFF;font-weight:800">■ Blue</span> means the letter is in the word but <strong>in the wrong spot</strong>.</p>
+    <p><span style="color:#666;font-weight:800">■ Gray</span> means the letter is <strong>not in that word</strong>.</p>
+    
+    <h3 style="margin-top:16px">⌨️ Keyboard Hints</h3>
+    <p>Small <span style="display:inline-block;width:10px;height:10px;background:#3FCBFF;border-radius:2px;vertical-align:middle;"></span> blue squares on keyboard keys show how many times that letter still needs to be placed in the phrase.</p>
+    
+    <h3 style="margin-top:16px">📝 Guessed Words</h3>
+    <p>Your guesses appear on the left side. <u>Underlined letters</u> indicate letters that are somewhere in the phrase.</p>
+    
+    <h3 style="margin-top:16px">💪 ALL IN</h3>
+    <p>Attempt the entire phrase at once. Costs one guess. If you miss, you earn the <strong>🎺 Super Womp</strong> badge — but if you're correct, you get instant glory!</p>
+    
+    <h3 style="margin-top:16px">🏆 Badges</h3>
+    <p><strong>🏆 Wozzlar</strong> = Solved in 7 guesses or fewer</p>
+    <p><strong>😐 Womp</strong> = Solved in 8+ guesses</p>
+    <p><strong>🎺 Super Womp</strong> = Failed ALL IN attempt</p>
+    
+    <h3 style="margin-top:16px">📅 Daily Puzzle</h3>
+    <p>A new puzzle drops every day. Solve it and share your results with friends!</p>
+  `;
+  modalActions.innerHTML = `<button class="btn" onclick="closeModal()">Close</button>`;
+  modal.style.display = 'flex';
+}
+
+
 /* ===== Add to Home Screen ===== */
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const INSTALL_PROMPT_DISMISS_DAYS = 7;
@@ -2036,10 +2078,15 @@ let _tutorialFirstGuess = false; // Track if user has made first guess
 
 // Tutorial steps - minimal microcopy only
 const TUTORIAL_STEPS = [
-  { id: 'type-guess', trigger: 'start', delay: 500 }, // Start directly with typing instruction
+  { id: 'welcome-goal', trigger: 'start', delay: 500 }, // Explain the goal
+  { id: 'welcome-theme', trigger: 'manual-next', delay: 0 }, // Explain themes
+  { id: 'welcome-daily', trigger: 'manual-next', delay: 0 }, // Explain daily puzzles
+  { id: 'type-guess', trigger: 'manual-next', delay: 500 }, // Start typing instruction
   { id: 'colors', trigger: 'first-guess', delay: 800 },
   { id: 'keyboard-hints', trigger: 'manual-next', delay: 0 }, // User clicks "Got it!" to continue
   { id: 'guessed-words', trigger: 'manual-next', delay: 0 }, // User clicks "Next" to continue
+  { id: 'all-in', trigger: 'manual-next', delay: 0 }, // Explain ALL IN feature
+  { id: 'keep-solving', trigger: 'manual-next', delay: 0 }, // Invite to continue solving
   { id: 'complete', trigger: 'puzzle-solved', delay: 500 }
 ];
 
@@ -2204,6 +2251,24 @@ function showTutorialStep(stepId){
   removeTutorialTooltip();
   
   switch(stepId){
+    case 'welcome-goal':
+      createTutorialTooltip('welcome-goal', 
+        'The goal of Wozzlar is to solve the phrase in as few guesses as possible.<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Next</button>', 
+        null, 'center');
+      break;
+      
+    case 'welcome-theme':
+      createTutorialTooltip('welcome-theme', 
+        'Every puzzle has a theme. For example, "Food and Drink" or "Famous Places" — this tutorial\'s theme is "Magic".<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Next</button>', 
+        null, 'center');
+      break;
+      
+    case 'welcome-daily':
+      createTutorialTooltip('welcome-daily', 
+        'Come back daily for a new puzzle — and if you\'d like, you can share your results with friends and family.<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Let\'s Play!</button>', 
+        null, 'center');
+      break;
+      
     case 'type-guess':
       createTutorialTooltip('type-guess', 
         '⌨️ Type any 4-letter word, then press ENTER', 
@@ -2249,8 +2314,8 @@ function showTutorialStep(stepId){
       
     case 'keyboard-hints':
       createTutorialTooltip('keyboard-hints', 
-        '<span style="display:inline-block;width:20px;height:20px;background:#C8D9FF;border-radius:4px;vertical-align:middle;margin-right:6px;"></span>Blue squares show letters used in your guesses<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Next</button>', 
-        '#kb', 'top');
+        '<span style="display:inline-block;width:20px;height:20px;background:#3FCBFF;border-radius:4px;vertical-align:middle;margin-right:6px;"></span>Blue squares show letters remaining in the puzzle.<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Next</button>', 
+        '#kb', 'bottom');
       break;
       
     case 'guessed-words':
@@ -2258,9 +2323,21 @@ function showTutorialStep(stepId){
       const firstGuess = document.querySelector('.side-tags.left .tag');
       if(firstGuess){
         createTutorialTooltip('guessed-words', 
-          '📝 Your guesses appear here<br><u>Underlined letters</u> are in the word<br><button class="tutorial-continue-btn" onclick="dismissTutorialTooltip()">Continue Playing</button>', 
+          '📝 Your guesses appear here<br><u>Underlined letters</u> are in the word<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Next</button>', 
           firstGuess, 'right');
       }
+      break;
+      
+    case 'all-in':
+      createTutorialTooltip('all-in', 
+        '💪 ALL IN lets you attempt the entire phrase at once — but if you miss, you get the Super Womp badge.<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Got it!</button>', 
+        '#kb', 'bottom');
+      break;
+      
+    case 'keep-solving':
+      createTutorialTooltip('keep-solving', 
+        '🎯 Ready to solve the rest? Keep guessing!<br><button class="tutorial-continue-btn" onclick="dismissTutorialTooltip()">Continue Playing</button>', 
+        null, 'center');
       break;
       
     case 'complete':
