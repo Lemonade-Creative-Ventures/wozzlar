@@ -622,8 +622,8 @@ function setActive(i){
   updateControlsState();
   saveDailyState();
   
-  // Tutorial trigger: word selected (step 1 = tap-word, step 2 = type-guess)
-  if(_inTutorialMode && _currentTutorialStep >= 1 && _currentTutorialStep < 3){
+  // Tutorial trigger: word selected (only trigger if on tap-word step and selecting first word)
+  if(_inTutorialMode && _currentTutorialStep === 1 && i === 0){
     triggerTutorialStep('word-selected');
   }
 }
@@ -2041,12 +2041,12 @@ let _tutorialFirstGuess = false; // Track if user has made first guess
 
 // Tutorial steps - minimal microcopy only
 const TUTORIAL_STEPS = [
-  { id: 'welcome', trigger: 'manual', delay: 500 }, // Changed to manual - user must click to start
+  { id: 'welcome', trigger: 'manual', delay: 500 }, // User must click to start
   { id: 'tap-word', trigger: 'start', delay: 500 },
   { id: 'type-guess', trigger: 'word-selected', delay: 500 },
   { id: 'colors', trigger: 'first-guess', delay: 800 },
-  { id: 'keyboard-hints', trigger: 'auto-after-colors', delay: 2500 }, // New step for keyboard explanation
-  { id: 'guessed-words', trigger: 'auto-after-keyboard', delay: 2500 }, // New step for guessed words
+  { id: 'keyboard-hints', trigger: 'manual-next', delay: 0 }, // User clicks "Got it!" to continue
+  { id: 'guessed-words', trigger: 'manual-next', delay: 0 }, // User clicks "Next" to continue
   { id: 'complete', trigger: 'puzzle-solved', delay: 500 }
 ];
 
@@ -2219,7 +2219,7 @@ function showTutorialStep(stepId){
       
     case 'tap-word':
       createTutorialTooltip('tap-word', 
-        '👆 Tap the first word', 
+        'Tap the first word 👇', 
         '#phrase .row:first-child', 'bottom');
       break;
       
@@ -2231,13 +2231,13 @@ function showTutorialStep(stepId){
       
     case 'colors':
       createTutorialTooltip('colors', 
-        '<span style="color:#FF4FA3">■ Pink</span> = right spot<br><span style="color:#3FCBFF">■ Blue</span> = wrong spot<br>Keep guessing!', 
-        '#phrase .row:first-child', 'bottom');
+        '<span style="color:#FF4FA3">■ Pink</span> = right spot<br><span style="color:#3FCBFF">■ Blue</span> = wrong spot<br>No color = letter not in word<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Got it!</button>', 
+        '#phrase', 'bottom');
       break;
       
     case 'keyboard-hints':
       createTutorialTooltip('keyboard-hints', 
-        '💡 Blue squares show letters used in your guesses', 
+        '💡 Blue squares show letters used in your guesses<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Next</button>', 
         '#kb', 'top');
       break;
       
@@ -2246,7 +2246,7 @@ function showTutorialStep(stepId){
       const firstGuess = document.querySelector('.side-tags.left .tag');
       if(firstGuess){
         createTutorialTooltip('guessed-words', 
-          '📝 Your guesses appear here<br><u>Underlined letters</u> are in the word', 
+          '📝 Your guesses appear here<br><u>Underlined letters</u> are in the word<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Continue Playing</button>', 
           firstGuess, 'right');
       }
       break;
@@ -2269,19 +2269,6 @@ function triggerTutorialStep(trigger){
       _currentTutorialStep = stepIndex;
       setTimeout(() => {
         showTutorialStep(step.id);
-        
-        // Auto-advance from colors to keyboard-hints
-        if(step.id === 'colors'){
-          setTimeout(() => {
-            triggerTutorialStep('auto-after-colors');
-          }, 2500);
-        }
-        // Auto-advance from keyboard-hints to guessed-words
-        else if(step.id === 'keyboard-hints'){
-          setTimeout(() => {
-            triggerTutorialStep('auto-after-keyboard');
-          }, 2500);
-        }
       }, step.delay || 0);
     }
   }
@@ -2301,6 +2288,22 @@ function startTutorialSteps(){
 
 // Make startTutorialSteps globally available for onclick handler
 window.startTutorialSteps = startTutorialSteps;
+
+// New function to advance to next tutorial step manually
+function nextTutorialStep(){
+  if(!_inTutorialMode) return;
+  
+  // Advance to the next step
+  const nextStepIndex = _currentTutorialStep + 1;
+  if(nextStepIndex < TUTORIAL_STEPS.length){
+    const nextStep = TUTORIAL_STEPS[nextStepIndex];
+    _currentTutorialStep = nextStepIndex;
+    setTimeout(() => showTutorialStep(nextStep.id), nextStep.delay || 0);
+  }
+}
+
+// Make nextTutorialStep globally available for onclick handler
+window.nextTutorialStep = nextTutorialStep;
 
 function startTutorial(){
   menu.classList.remove('show');
