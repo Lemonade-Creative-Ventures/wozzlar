@@ -2243,11 +2243,11 @@ function showTutorialStep(stepId){
       
     case 'guessed-words':
       // Find the first guessed word on the left side
-      const firstGuess = document.querySelector('#phrase .prev-guesses');
-      if(firstGuess && firstGuess.children.length > 0){
+      const firstGuess = document.querySelector('.side-tags.left .tag');
+      if(firstGuess){
         createTutorialTooltip('guessed-words', 
           '📝 Your guesses appear here<br><u>Underlined letters</u> are in the word', 
-          firstGuess.children[0], 'right');
+          firstGuess, 'right');
       }
       break;
       
