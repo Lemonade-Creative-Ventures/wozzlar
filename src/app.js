@@ -2291,10 +2291,12 @@ function triggerTutorialStep(trigger){
 function startTutorialSteps(){
   if(!_inTutorialMode) return;
   
-  // Advance to step 1 (tap-word)
-  _currentTutorialStep = 1;
-  const step = TUTORIAL_STEPS[1];
-  setTimeout(() => showTutorialStep(step.id), step.delay || 0);
+  // Advance to tap-word step (after welcome)
+  const tapWordStep = TUTORIAL_STEPS.find(s => s.id === 'tap-word');
+  if(tapWordStep){
+    _currentTutorialStep = TUTORIAL_STEPS.indexOf(tapWordStep);
+    setTimeout(() => showTutorialStep(tapWordStep.id), tapWordStep.delay || 0);
+  }
 }
 
 // Make startTutorialSteps globally available for onclick handler
