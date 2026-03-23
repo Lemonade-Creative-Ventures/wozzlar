@@ -434,7 +434,7 @@ function todayKey(){
   return `wozzlar_daily_${y}-${m}-${day}`;
 }
 function saveDailyState(){
-  if(state.isPractice || _inTourMode) return;
+  if(state.isPractice || _inTutorialMode) return;
   const payload = {
     puzzleNumber: currentPuzzleNumber(),
     words: state.words,
@@ -621,6 +621,11 @@ function setActive(i){
   updateNormalCaretHighlight();
   updateControlsState();
   saveDailyState();
+  
+  // Tutorial trigger: word selected
+  if(_inTutorialMode && _currentTutorialStep === 1){
+    triggerTutorialStep('word-selected');
+  }
 }
 
 function paintRows(){
@@ -1182,6 +1187,12 @@ function submitActiveWord(){
 
   state.history.push({ wi, guess, scores });
   incrementGuessCount();
+  
+  // Tutorial trigger: first guess made
+  if(_inTutorialMode && !_tutorialFirstGuess){
+    _tutorialFirstGuess = true;
+    triggerTutorialStep('first-guess');
+  }
 
   if(guess === target){
     state.solvedWord[wi] = true;
@@ -1264,31 +1275,10 @@ function clearStatsBlocks(){
 }
 
 function showCompletionOverlay(fromAllIn){
-  // During tour mode, show the final step when puzzle is completed
-  if(_inTourMode && _tourWaitingForCompletion) {
-    if(_tgInstance && isPuzzleSolved()){
-      // Show only the final "Puzzle Complete" step
-      // Reset the waiting flag BEFORE visiting the final step
-      // This ensures that when the user closes the final step, onAfterExit
-      // will see _tourWaitingForCompletion=false and proceed with normal cleanup
-      _tourWaitingForCompletion = false;
-      // Show the dialog again and jump to final step
-      const dialogEl = document.querySelector('.tg-dialog');
-      const backdropEl = document.querySelector('.wz-tour-backdrop');
-      if(dialogEl) {
-        dialogEl.style.display = '';
-      }
-      if(backdropEl) {
-        backdropEl.style.display = '';
-      }
-      // Visit the final step
-      _tgInstance.visitStep(TOUR_STEP_COMPLETE);
-    }
-    return;
-  }
-  
-  // If in tour mode but not waiting for completion, just return
-  if(_inTourMode) {
+  // During tutorial mode, show the completion step
+  if(_inTutorialMode) {
+    _tutorialCompleted = true;
+    triggerTutorialStep('puzzle-solved');
     return;
   }
   
@@ -2039,17 +2029,24 @@ function showHowToPlay(){
   modalEl.classList.add('show');
 }
 
-/* ===== TOUR GUIDE ===== */
-let _tgInstance = null;
-let _tourState = null; // Stores daily puzzle state during tour
-let _inTourMode = false; // Flag to track if we're in tour mode
-let _tourWaitingForCompletion = false; // Flag to track if we're waiting for puzzle completion after step 5
-const TOUR_STEP_YOUR_TURN = 5; // Index of "Your Turn to Solve!" step
-const TOUR_STEP_COMPLETE = 6; // Index of "Puzzle Complete!" step
+/* ===== TUTORIAL (Playable Onboarding) ===== */
+let _tutorialState = null; // Stores daily puzzle state during tutorial
+let _inTutorialMode = false; // Flag to track if we're in tutorial mode
+let _currentTutorialStep = 0; // Current tutorial step
+let _tutorialCompleted = false; // Whether puzzle was completed during tutorial
+let _tutorialFirstGuess = false; // Track if user has made first guess
 
-function saveTourState(){
-  // Save the current daily puzzle state before entering tour
-  // We need to serialize Sets properly
+// Tutorial steps - minimal microcopy only
+const TUTORIAL_STEPS = [
+  { id: 'welcome', trigger: 'auto', delay: 500 },
+  { id: 'tap-word', trigger: 'auto', delay: 2000 },
+  { id: 'type-guess', trigger: 'word-selected', delay: 500 },
+  { id: 'colors', trigger: 'first-guess', delay: 800 },
+  { id: 'complete', trigger: 'puzzle-solved', delay: 500 }
+];
+
+function saveTutorialState(){
+  // Save the current daily puzzle state before entering tutorial
   const stateToSave = {
     ...state,
     inPhrase: Array.from(state.inPhrase),
@@ -2057,16 +2054,16 @@ function saveTourState(){
       Object.entries(state.wordsContaining).map(([k, v]) => [k, Array.from(v)])
     )
   };
-  _tourState = {
+  _tutorialState = {
     savedState: JSON.parse(JSON.stringify(stateToSave)),
     savedDaily: localStorage.getItem(todayKey())
   };
 }
 
-function restoreTourState(){
-  // Restore the daily puzzle state after tour
-  if(_tourState){
-    state = _tourState.savedState;
+function restoreTutorialState(){
+  // Restore the daily puzzle state after tutorial
+  if(_tutorialState){
+    state = _tutorialState.savedState;
     
     // Restore Sets from arrays
     state.inPhrase = new Set(state.inPhrase);
@@ -2074,11 +2071,13 @@ function restoreTourState(){
       Object.entries(state.wordsContaining).map(([k, v]) => [k, new Set(v)])
     );
     
-    if(_tourState.savedDaily){
-      localStorage.setItem(todayKey(), _tourState.savedDaily);
+    if(_tutorialState.savedDaily){
+      localStorage.setItem(todayKey(), _tutorialState.savedDaily);
     }
-    _tourState = null;
-    _inTourMode = false;
+    _tutorialState = null;
+    _inTutorialMode = false;
+    _tutorialCompleted = false;
+    _tutorialFirstGuess = false;
     rebuildUIFromState();
     renderKeyCounters();
     paintRows();
@@ -2086,10 +2085,10 @@ function restoreTourState(){
   }
 }
 
-function loadTourPuzzle(){
-  // Initialize game with the WORD WIZARD puzzle for the tour
-  const puz = TOUR_PUZZLE;
-  state = baseState(puz, "Tour", null);
+function loadTutorialPuzzle(){
+  // Initialize game with the WORD WIZARD puzzle for the tutorial
+  const puz = TOUR_PUZZLE; // Reuse TOUR_PUZZLE constant (WORD WIZARD)
+  state = baseState(puz, "Tutorial", null);
   state.words.forEach((w, wi) => {
     w.split('').forEach(c => {
       if(/[A-Z]/.test(c)){
@@ -2103,135 +2102,163 @@ function loadTourPuzzle(){
   state.entries= state.words.map(w => Array.from({length:w.length}, ()=> ''));
   state.flowIndex = state.words.map(()=>0);
   state.persistentNear = state.words.map(w => Array.from({length:w.length}, () => false));
-  _inTourMode = true;
+  _inTutorialMode = true;
   setBadge('none');
   rebuildUIFromState();
   renderKeyCounters();
 }
 
-function startTour(){
-  if(typeof tourguide === 'undefined' || !tourguide.TourGuideClient){
-    showInfoModal("The tour guide couldn't load. Check your connection and try again.");
-    return;
+function createTutorialTooltip(id, content, target, position = 'bottom'){
+  // Remove any existing tooltip
+  const existing = document.querySelector('.tutorial-tooltip');
+  if(existing) existing.remove();
+  
+  // Create tooltip element
+  const tooltip = document.createElement('div');
+  tooltip.className = `tutorial-tooltip tutorial-${id}`;
+  tooltip.setAttribute('data-step', id);
+  tooltip.innerHTML = content;
+  
+  document.body.appendChild(tooltip);
+  
+  // Position tooltip relative to target
+  if(target){
+    const targetEl = typeof target === 'string' ? document.querySelector(target) : target;
+    if(targetEl){
+      const rect = targetEl.getBoundingClientRect();
+      const tooltipRect = tooltip.getBoundingClientRect();
+      
+      if(position === 'bottom'){
+        tooltip.style.top = `${rect.bottom + 16}px`;
+        tooltip.style.left = `${rect.left + (rect.width / 2) - (tooltipRect.width / 2)}px`;
+      } else if(position === 'top'){
+        tooltip.style.top = `${rect.top - tooltipRect.height - 16}px`;
+        tooltip.style.left = `${rect.left + (rect.width / 2) - (tooltipRect.width / 2)}px`;
+      } else if(position === 'center'){
+        tooltip.style.top = `50%`;
+        tooltip.style.left = `50%`;
+        tooltip.style.transform = `translate(-50%, -50%)`;
+      }
+      
+      // Add highlight to target
+      targetEl.classList.add('tutorial-highlight');
+    }
+  } else {
+    // Center tooltip
+    tooltip.style.top = `50%`;
+    tooltip.style.left = `50%`;
+    tooltip.style.transform = `translate(-50%, -50%)`;
   }
+  
+  // Animate in
+  setTimeout(() => tooltip.classList.add('show'), 10);
+  
+  return tooltip;
+}
 
+function removeTutorialTooltip(){
+  const tooltip = document.querySelector('.tutorial-tooltip');
+  if(tooltip){
+    tooltip.classList.remove('show');
+    setTimeout(() => tooltip.remove(), 300);
+  }
+  // Remove all highlights
+  document.querySelectorAll('.tutorial-highlight').forEach(el => {
+    el.classList.remove('tutorial-highlight');
+  });
+}
+
+function showTutorialStep(stepId){
+  removeTutorialTooltip();
+  
+  switch(stepId){
+    case 'welcome':
+      createTutorialTooltip('welcome', 
+        '🧙‍♂️ Solve this phrase!', 
+        null, 'center');
+      break;
+      
+    case 'tap-word':
+      createTutorialTooltip('tap-word', 
+        '👆 Tap the first word', 
+        '#phrase .row:first-child', 'top');
+      break;
+      
+    case 'type-guess':
+      createTutorialTooltip('type-guess', 
+        '⌨️ Type any 4-letter word, then press ENTER', 
+        '#kb', 'top');
+      break;
+      
+    case 'colors':
+      createTutorialTooltip('colors', 
+        '<span style="color:#FF4FA3">■ Pink</span> = right spot<br><span style="color:#3FCBFF">■ Blue</span> = wrong spot<br>Keep guessing!', 
+        '#phrase', 'top');
+      break;
+      
+    case 'complete':
+      createTutorialTooltip('complete', 
+        '✨ Amazing! Ready for today\'s puzzle?<br><button class="tutorial-continue-btn" onclick="finishTutorial()">Let\'s Go!</button>', 
+        null, 'center');
+      break;
+  }
+}
+
+function triggerTutorialStep(trigger){
+  if(!_inTutorialMode) return;
+  
+  const step = TUTORIAL_STEPS.find(s => s.trigger === trigger && s.id !== TUTORIAL_STEPS[_currentTutorialStep]?.id);
+  if(step){
+    const stepIndex = TUTORIAL_STEPS.indexOf(step);
+    if(stepIndex > _currentTutorialStep){
+      _currentTutorialStep = stepIndex;
+      setTimeout(() => showTutorialStep(step.id), step.delay || 0);
+    }
+  }
+}
+
+function startTutorial(){
   menu.classList.remove('show');
   hamburger.setAttribute('aria-expanded','false');
 
-  // Save current state and load tour puzzle (only if not already in tour mode)
-  if(!_inTourMode){
-    saveTourState();
-    loadTourPuzzle();
+  // Save current state and load tutorial puzzle
+  if(!_inTutorialMode){
+    saveTutorialState();
+    loadTutorialPuzzle();
   }
-  // If already in tour mode, don't reload - just restart the tour guide
 
-  // Tour step configuration
-  const TOUR_STEPS = [
-        {
-          title: "Let's Play! 🧙‍♂️",
-          content: "You'll solve this phrase word by word. Let me show you how the game works as you play!",
-        },
-        {
-          target: "#phrase",
-          title: "Your Mystery Phrase",
-          content: "Two words to discover. The first word has <strong>4 letters</strong>. Click the top row to start working on it.",
-        },
-        {
-          target: "#kb",
-          title: "Make Your First Guess",
-          content: "Type any 4-letter word you want and press <strong>ENTER</strong>. Go ahead, try it! I'll wait... ⏸️",
-        },
-        {
-          target: "#phrase",
-          title: "See the Colors?",
-          content: "<span style='color:#FF4FA3;font-weight:800'>■ Pink</span> means correct letter, correct spot!<br><span style='color:#3FCBFF;font-weight:800'>■ Blue</span> means letter is in the word but wrong spot.<br><br><span style='font-family:\"Kalam\",system-ui,sans-serif;font-weight:700;color:#7fc9ff;'>Little blue words</span> to the left of the puzzle words are the ones you have guessed. If one of the letters is <span style='font-family:\"Kalam\",system-ui,sans-serif;font-weight:700;color:#7fc9ff;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:2px;'>Underlined</span>, the letter is in the word, but in the wrong position.",
-        },
-        {
-          target: "#kb",
-          title: "Your Keyboard Learns",
-          content: "The keyboard now shows which letters you've tried. Use what you learned to guess again!<br><br><strong>Blue squares</strong> on available keys show how many more of that letter remain in the puzzle.<br><br>Want to solve the whole puzzle at once? Use the <strong>ALL IN</strong> button for high stakes!",
-        },
-        {
-          title: "Your Turn to Solve! 🎮",
-          content: "Now use what you've learned to solve the puzzle! Try different combinations based on the color clues.<br><br>Need help? Tap the menu and select <strong>How to Play</strong> anytime to review the instructions.",
-        },
-        {
-          target: "#phrase",
-          title: "Puzzle Complete! 🎉",
-          content: "Magical work, my friend. You will be a word wizard in no time! 🧙‍♂️✨<br><br><strong>Daily puzzles</strong> give you 7 guesses total. Solve it to earn badges and build your streak!<br><br>Ready to play today's real puzzle?",
-        },
-      ];
+  // Start with first step
+  _currentTutorialStep = 0;
+  const firstStep = TUTORIAL_STEPS[0];
+  setTimeout(() => showTutorialStep(firstStep.id), firstStep.delay || 0);
   
-  const FINAL_TOUR_STEP_INDEX = TOUR_STEPS.length - 1;
-
-  // Create the instance once to avoid duplicate DOM nodes
-  if(!_tgInstance){
-    _tgInstance = new tourguide.TourGuideClient({
-      steps: TOUR_STEPS,
-      debug: false,
-      exitOnClickOutside: false,
-      nextLabel: "Next →",
-      prevLabel: "← Back",
-      finishLabel: "Let's Play Today's Puzzle!",
-      dialogMaxWidth: 360,
-      backdropClass: "wz-tour-backdrop",
-      dialogClass: "wz-tour-dialog",
-      
-      // Custom navigation to handle step transitions
-      onBeforeStepChange: (oldStep, newStep) => {
-        // When user clicks Next on "Your Turn to Solve!" step, prevent navigation
-        // and instead hide the dialog so they can play
-        if(oldStep === TOUR_STEP_YOUR_TURN && newStep === TOUR_STEP_COMPLETE && !_tourWaitingForCompletion) {
-          // First time clicking Next from "Your Turn" step - hide dialog and stay on this step
-          _tourWaitingForCompletion = true;
-          // Hide the tour dialog to let user play
-          const dialogEl = document.querySelector('.tg-dialog');
-          const backdropEl = document.querySelector('.wz-tour-backdrop');
-          if(dialogEl) {
-            dialogEl.style.display = 'none';
-          }
-          if(backdropEl) {
-            backdropEl.style.display = 'none';
-          }
-          // Prevent navigation - stay at step 5
-          return false;
-        }
-        
-        // If trying to go to completion step when puzzle not solved, prevent it
-        if(newStep === TOUR_STEP_COMPLETE && !isPuzzleSolved()){
-          return false;
-        }
-        
-        return true;
-      },
-      
-      onAfterStepChange: (step) => {
-        // No special handling needed here anymore
-      },
-    });
-
-    _tgInstance.onAfterExit(() => {
-      // Always clean up flags, but only restore state if not waiting for puzzle completion
-      if(_tourWaitingForCompletion) {
-        // User is solving the puzzle - keep tour mode active but don't restore
-        // State will be restored when they complete the puzzle and close the final step
-        return;
-      }
-      // Normal exit - restore state and clean up
-      _inTourMode = false;
-      _tourWaitingForCompletion = false;
-      restoreTourState();
-      try{ localStorage.setItem('wozzlar_tour_seen_v1','1'); }catch(e){ console.warn('wozzlar: could not save tour state', e); }
-    });
-  }
-
-  // Sync backdrop color with the current day/night theme each time the tour starts.
-  const isDay = document.body.classList.contains('day');
-  _tgInstance.setOptions({ backdropColor: isDay ? "rgba(15,18,32,0.45)" : "rgba(0,0,0,0.80)" });
-
-  // Start the tour
-  _tgInstance.start();
+  // Auto-advance to next step
+  setTimeout(() => {
+    _currentTutorialStep = 1;
+    const nextStep = TUTORIAL_STEPS[1];
+    showTutorialStep(nextStep.id);
+  }, TUTORIAL_STEPS[0].delay + 2000);
 }
+
+function finishTutorial(){
+  removeTutorialTooltip();
+  _inTutorialMode = false;
+  _tutorialCompleted = true;
+  
+  // Mark tutorial as seen
+  try{ localStorage.setItem('wozzlar_tutorial_seen_v1','1'); }catch(e){}
+  
+  // Restore daily puzzle
+  restoreTutorialState();
+}
+
+// Keep old function name for backwards compatibility in HTML/menu
+function startTour(){
+  startTutorial();
+}
+
+// Make finishTutorial globally available for onclick handler in tooltip button
+window.finishTutorial = finishTutorial;
 
 /* ===== Init & navigation safety ===== */
 async function goToDaily(){
@@ -2278,11 +2305,11 @@ function initSplashScreen(){
   splashPlayBtn.addEventListener('click', ()=>{
     hideSplashScreen();
     
-    // Auto-start tour for first-time visitors after splash
-    if(!localStorage.getItem('wozzlar_tour_seen_v1')){
-      setTimeout(startTour, 500);
+    // Auto-start tutorial for first-time visitors after splash
+    if(!localStorage.getItem('wozzlar_tutorial_seen_v1')){
+      setTimeout(startTutorial, 500);
     } else {
-      // Show install prompt only if tour has been seen
+      // Show install prompt only if tutorial has been seen
       showInstallPrompt();
     }
   });
