@@ -621,11 +621,6 @@ function setActive(i){
   updateNormalCaretHighlight();
   updateControlsState();
   saveDailyState();
-  
-  // Tutorial trigger: word selected (only trigger if on tap-word step and selecting first word)
-  if(_inTutorialMode && _currentTutorialStep === 1 && i === 0){
-    triggerTutorialStep('word-selected');
-  }
 }
 
 function paintRows(){
@@ -2041,9 +2036,7 @@ let _tutorialFirstGuess = false; // Track if user has made first guess
 
 // Tutorial steps - minimal microcopy only
 const TUTORIAL_STEPS = [
-  { id: 'welcome', trigger: 'manual', delay: 500 }, // User must click to start
-  { id: 'tap-word', trigger: 'start', delay: 500 },
-  { id: 'type-guess', trigger: 'word-selected', delay: 500 },
+  { id: 'type-guess', trigger: 'start', delay: 500 }, // Start directly with typing instruction
   { id: 'colors', trigger: 'first-guess', delay: 800 },
   { id: 'keyboard-hints', trigger: 'manual-next', delay: 0 }, // User clicks "Got it!" to continue
   { id: 'guessed-words', trigger: 'manual-next', delay: 0 }, // User clicks "Next" to continue
@@ -2211,18 +2204,6 @@ function showTutorialStep(stepId){
   removeTutorialTooltip();
   
   switch(stepId){
-    case 'welcome':
-      createTutorialTooltip('welcome', 
-        '👋 Welcome to Wozzlar!<br><span style="font-size:0.9em;opacity:0.9;">Let\'s learn how to play</span><br><button class="tutorial-continue-btn" onclick="startTutorialSteps()">Start Tutorial</button>', 
-        null, 'center');
-      break;
-      
-    case 'tap-word':
-      createTutorialTooltip('tap-word', 
-        'Tap the first word 👇', 
-        '#phrase .row:first-child', 'bottom');
-      break;
-      
     case 'type-guess':
       createTutorialTooltip('type-guess', 
         '⌨️ Type any 4-letter word, then press ENTER', 
@@ -2231,13 +2212,44 @@ function showTutorialStep(stepId){
       
     case 'colors':
       createTutorialTooltip('colors', 
-        '<span style="color:#FF4FA3">■ Pink</span> = right spot<br><span style="color:#3FCBFF">■ Blue</span> = wrong spot<br>No color = letter not in word<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Got it!</button>', 
+        '<span style="color:#FF4FA3">■ Pink</span> = right spot<br><span style="color:#3FCBFF">■ Blue</span> = wrong spot<br>Don\'t see any colours? Try a new word, then press ENTER.<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Got it!</button>', 
         '#phrase', 'bottom');
+      
+      // After 3 seconds, move tooltip below keyboard
+      setTimeout(() => {
+        const tooltip = document.querySelector('.tutorial-tooltip[data-step="colors"]');
+        if(tooltip && _inTutorialMode){
+          const kb = document.querySelector('#kb');
+          if(kb){
+            const rect = kb.getBoundingClientRect();
+            const tooltipRect = tooltip.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            const viewportWidth = window.innerWidth;
+            
+            let top = rect.bottom + 16;
+            let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+            
+            // Ensure tooltip stays within viewport bounds
+            const padding = 16;
+            if(left < padding){
+              left = padding;
+            } else if(left + tooltipRect.width > viewportWidth - padding){
+              left = viewportWidth - tooltipRect.width - padding;
+            }
+            if(top + tooltipRect.height > viewportHeight - padding){
+              top = viewportHeight - tooltipRect.height - padding;
+            }
+            
+            tooltip.style.top = `${top}px`;
+            tooltip.style.left = `${left}px`;
+          }
+        }
+      }, 3000);
       break;
       
     case 'keyboard-hints':
       createTutorialTooltip('keyboard-hints', 
-        '💡 Blue squares show letters used in your guesses<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Next</button>', 
+        '<span style="display:inline-block;width:20px;height:20px;background:#C8D9FF;border-radius:4px;vertical-align:middle;margin-right:6px;"></span>Blue squares show letters used in your guesses<br><button class="tutorial-continue-btn" onclick="nextTutorialStep()">Next</button>', 
         '#kb', 'top');
       break;
       
@@ -2253,7 +2265,7 @@ function showTutorialStep(stepId){
       
     case 'complete':
       createTutorialTooltip('complete', 
-        '✨ Amazing! Ready for today\'s puzzle?<br><button class="tutorial-continue-btn" onclick="finishTutorial()">Let\'s Go!</button>', 
+        '✨ Amazing! Ready for today\'s puzzle?<br><span style="font-size:0.85em;opacity:0.85;display:block;margin-top:8px;">Tip: Access the tutorial or rules anytime from the menu.</span><br><button class="tutorial-continue-btn" onclick="finishTutorial()">Let\'s Go!</button>', 
         null, 'center');
       break;
   }
@@ -2273,21 +2285,6 @@ function triggerTutorialStep(trigger){
     }
   }
 }
-
-// New function called by the "Start Tutorial" button
-function startTutorialSteps(){
-  if(!_inTutorialMode) return;
-  
-  // Advance to tap-word step (after welcome)
-  const tapWordStep = TUTORIAL_STEPS.find(s => s.id === 'tap-word');
-  if(tapWordStep){
-    _currentTutorialStep = TUTORIAL_STEPS.indexOf(tapWordStep);
-    setTimeout(() => showTutorialStep(tapWordStep.id), tapWordStep.delay || 0);
-  }
-}
-
-// Make startTutorialSteps globally available for onclick handler
-window.startTutorialSteps = startTutorialSteps;
 
 // New function to advance to next tutorial step manually
 function nextTutorialStep(){
@@ -2323,7 +2320,7 @@ function startTutorial(){
     loadTutorialPuzzle();
   }
 
-  // Start with welcome step (requires user click to continue)
+  // Start with type-guess step directly
   _currentTutorialStep = 0;
   const firstStep = TUTORIAL_STEPS[0];
   setTimeout(() => showTutorialStep(firstStep.id), firstStep.delay || 0);
