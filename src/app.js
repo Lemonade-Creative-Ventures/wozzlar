@@ -549,6 +549,53 @@ function stepLeftSkippingSpace(){
   do { state.solveIndex--; } while(solveIndexToPos(state.solveIndex).space && state.solveIndex > 0);
 }
 
+// Helper to move to next empty unlocked position in solve mode
+function stepToNextEmptyUnlocked(){
+  const total = totalSolveLength();
+  const start = state.solveIndex;
+  let si = state.solveIndex + 1;
+  // Search forward for first empty unlocked position
+  while(si < total){
+    const m = solveIndexToPos(si);
+    if(!m.space && !isLocked(m.wi, m.pos) && (state.entries[m.wi][m.pos]||'') === ''){ 
+      state.solveIndex = si; 
+      return true; 
+    }
+    si++;
+  }
+  // No empty position found forward, stay at current or move to next unlocked
+  stepRightSkippingSpace();
+  return false;
+}
+
+// Helper to move to previous empty unlocked position in solve mode
+function stepToPrevEmptyUnlocked(){
+  const start = state.solveIndex;
+  let si = state.solveIndex - 1;
+  // Search backward for first empty unlocked position
+  while(si >= 0){
+    const m = solveIndexToPos(si);
+    if(!m.space && !isLocked(m.wi, m.pos) && (state.entries[m.wi][m.pos]||'') === ''){ 
+      state.solveIndex = si; 
+      return true; 
+    }
+    si--;
+  }
+  // No empty position found backward, stay at current or move to prev unlocked
+  stepLeftSkippingSpace();
+  return false;
+}
+
+// Helper to convert word index and position to solve index
+function posToSolveIndex(wi, pos){
+  let si = 0;
+  for(let i = 0; i < wi; i++){
+    si += state.words[i].length + 1; // +1 for space
+  }
+  si += pos;
+  return si;
+}
+
 function isLocked(wi,pos){ return state.locks[wi][pos] !== null; }
 
 function buildPhrase(){
@@ -575,6 +622,15 @@ function buildPhrase(){
 
       tile.addEventListener('click', (ev)=>{
         const wi = parseInt(row.dataset.row,10);
+        if(state.mode === 'solve'){
+          // In ALL IN mode, allow clicking to position cursor
+          // Only allow clicking on unlocked tiles
+          if(!isLocked(wi, j)){
+            state.solveIndex = posToSolveIndex(wi, j);
+            updateSolveCaret();
+          }
+          return;
+        }
         if(state.mode !== 'normal') return;
         // Single click should both activate word AND set position
         if(state.active !== wi){ 
@@ -1135,14 +1191,36 @@ function typeSolve(ch){
   let map = solveIndexToPos(state.solveIndex);
   if(map.space){ stepRightSkippingSpace(); map = solveIndexToPos(state.solveIndex); }
   if(!isLocked(map.wi,map.pos)){ state.entries[map.wi][map.pos] = ch; }
-  paintRows(); stepRightSkippingSpace(); updateSolveCaret(); updateControlsState();
+  paintRows(); 
+  // Skip to next empty unlocked position, or just next unlocked if no empty found
+  stepToNextEmptyUnlocked();
+  updateSolveCaret(); updateControlsState();
   renderKeyCounters();
 }
 function backspaceSolve(){
   let map = solveIndexToPos(state.solveIndex);
   let cleared = false;
-  if(!map.space && !isLocked(map.wi,map.pos) && state.entries[map.wi][map.pos] !== ''){ state.entries[map.wi][map.pos] = ''; cleared = true; }
-  if(!cleared){ stepLeftSkippingSpace(); map = solveIndexToPos(state.solveIndex); if(!map.space && !isLocked(map.wi,map.pos)){ state.entries[map.wi][map.pos] = ''; } }
+  // Clear current position if it's unlocked and has content
+  if(!map.space && !isLocked(map.wi,map.pos) && state.entries[map.wi][map.pos] !== ''){ 
+    state.entries[map.wi][map.pos] = ''; 
+    cleared = true; 
+  }
+  // If we didn't clear anything at current position, move to previous empty and clear it
+  if(!cleared){ 
+    if(stepToPrevEmptyUnlocked()){
+      map = solveIndexToPos(state.solveIndex); 
+      if(!map.space && !isLocked(map.wi,map.pos)){ 
+        state.entries[map.wi][map.pos] = ''; 
+      }
+    } else {
+      // No empty position found, just move left and clear
+      stepLeftSkippingSpace(); 
+      map = solveIndexToPos(state.solveIndex); 
+      if(!map.space && !isLocked(map.wi,map.pos)){ 
+        state.entries[map.wi][map.pos] = ''; 
+      }
+    }
+  }
   paintRows(); updateSolveCaret(); updateControlsState();
   renderKeyCounters();
 }
