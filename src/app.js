@@ -1201,28 +1201,35 @@ function typeSolve(ch){
 }
 function backspaceSolve(){
   let map = solveIndexToPos(state.solveIndex);
-  let cleared = false;
-  // Clear current position if it's unlocked and has content
+  
+  // If current position has content, clear it and stay
   if(!map.space && !isLocked(map.wi,map.pos) && state.entries[map.wi][map.pos] !== ''){ 
     state.entries[map.wi][map.pos] = ''; 
-    cleared = true; 
-  }
-  // If we didn't clear anything at current position, move to previous empty and clear it
-  if(!cleared){ 
-    if(stepToPrevEmptyUnlocked()){
-      map = solveIndexToPos(state.solveIndex); 
-      if(!map.space && !isLocked(map.wi,map.pos)){ 
-        state.entries[map.wi][map.pos] = ''; 
+    // Stay at current position after clearing
+  } else {
+    // Current position is empty, move back to find previous filled position
+    // Try to find previous non-empty position
+    let si = state.solveIndex - 1;
+    let foundFilled = false;
+    while(si >= 0){
+      const m = solveIndexToPos(si);
+      if(!m.space && !isLocked(m.wi, m.pos)){
+        if(state.entries[m.wi][m.pos] !== ''){
+          // Found a filled position, move there and clear it
+          state.solveIndex = si;
+          state.entries[m.wi][m.pos] = '';
+          foundFilled = true;
+          break;
+        }
       }
-    } else {
-      // No empty position found, just move left and clear
-      stepLeftSkippingSpace(); 
-      map = solveIndexToPos(state.solveIndex); 
-      if(!map.space && !isLocked(map.wi,map.pos)){ 
-        state.entries[map.wi][map.pos] = ''; 
-      }
+      si--;
+    }
+    // If no filled position found, just move to previous unlocked position
+    if(!foundFilled){
+      stepLeftSkippingSpace();
     }
   }
+  
   paintRows(); updateSolveCaret(); updateControlsState();
   renderKeyCounters();
 }
