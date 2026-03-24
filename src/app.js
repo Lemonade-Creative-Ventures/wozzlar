@@ -804,7 +804,6 @@ function kbClickHandler(e){
   if(lab === '⌫'){ backspace(); return; }
   if(lab === 'ALL IN'){ toggleSolveMode(k); return; }
   if(lab === 'REVEAL ANSWER'){ revealPracticeAnswer(); return; }
-  if(lab === 'CLEAR'){ clearBoard(); return; }
 }
 
 function buildKeyboard(){
@@ -824,19 +823,18 @@ function buildKeyboard(){
 
   const rowA = document.createElement('div');
   rowA.className = 'ctrl-row';
-  const clearBtnWrapper = document.createElement('div');
-  clearBtnWrapper.className = 'btn-clear';
-  const clearBtn = makeCtrlKey('CLEAR','CLEAR');
-  clearBtn.id = 'btnClear';
-  clearBtnWrapper.appendChild(clearBtn);
+  const allInBtnWrapper = document.createElement('div');
+  allInBtnWrapper.className = 'btn-all-in';
+  const allInBtn = makeCtrlKey('ALL IN','ALL IN');
+  allInBtn.id = 'btnSolve';
+  allInBtn.setAttribute('aria-pressed','false');
+  allInBtnWrapper.appendChild(allInBtn);
   const enter = makeCtrlKey('ENTER','ENTER'); enter.id = 'btnEnter';
-  rowA.appendChild(clearBtnWrapper);
+  rowA.appendChild(allInBtnWrapper);
   rowA.appendChild(enter);
 
   const rowB = document.createElement('div');
   rowB.className = 'ctrl-row';
-  const solve = makeCtrlKey('ALL IN','ALL IN'); solve.id = 'btnSolve'; solve.setAttribute('aria-pressed','false');
-  rowB.appendChild(solve);
   const reveal = state.isPractice ? makeCtrlKey('REVEAL ANSWER','REVEAL ANSWER') : null;
   if(reveal){ reveal.id = 'btnReveal'; rowB.appendChild(reveal); }
 
@@ -990,6 +988,25 @@ function findNextUnlockedPos(wi, startPos, L){
   return pos; // Returns -1 if no unlocked position found
 }
 
+/**
+ * Finds the next empty unlocked position in a word, searching forward first.
+ * @param {number} wi - Word index
+ * @param {number} startPos - Starting position to search from
+ * @param {number} L - Length of the word (number of tiles/positions)
+ * @returns {number} Index of next empty unlocked position, or -1 if none found
+ */
+function findNextEmptyUnlockedPos(wi, startPos, L){
+  // Try forward first - look for empty AND unlocked
+  let pos = startPos + 1;
+  while(pos < L && (isLocked(wi, pos) || state.entries[wi][pos] !== '')){
+    pos++;
+  }
+  if(pos < L) return pos;
+  
+  // No empty unlocked position forward, return -1
+  return -1;
+}
+
 function typeNormal(ch){
   const wi = state.active; if(state.solvedWord[wi]) return;
   const L = state.entries[wi].length;
@@ -1009,11 +1026,15 @@ function typeNormal(ch){
   // Replace letter at current position (whether empty or filled)
   state.entries[wi][pos] = ch;
   
-  // Move to next unlocked position (searches forward then backward)
-  const nextPos = findNextUnlockedPos(wi, pos, L);
-  // If no unlocked position found, stay at current position
-  // (current position is guaranteed unlocked by the check above)
-  state.flowIndex[wi] = nextPos >= 0 ? nextPos : pos;
+  // Move to next empty unlocked position (searches forward only)
+  const nextEmptyPos = findNextEmptyUnlockedPos(wi, pos, L);
+  if(nextEmptyPos >= 0){
+    // Found an empty position, move there
+    state.flowIndex[wi] = nextEmptyPos;
+  } else {
+    // No empty position found, stay at current position
+    state.flowIndex[wi] = pos;
+  }
   
   paintRows(); updateNormalCaretHighlight(); updateControlsState();
 }
