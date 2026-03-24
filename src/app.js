@@ -998,7 +998,9 @@ function findNextUnlockedPos(wi, startPos, L){
 function findNextEmptyUnlockedPos(wi, startPos, L){
   // Try forward first - look for empty AND unlocked
   let pos = startPos + 1;
-  while(pos < L && (isLocked(wi, pos) || state.entries[wi][pos] !== '')){ pos++; }
+  while(pos < L && (isLocked(wi, pos) || state.entries[wi][pos] !== '')){
+    pos++;
+  }
   if(pos < L) return pos;
   
   // No empty unlocked position forward, return -1
