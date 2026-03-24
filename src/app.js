@@ -550,38 +550,40 @@ function stepLeftSkippingSpace(){
 }
 
 // Helper to move to next empty unlocked position in solve mode
+// If no empty position exists, falls back to next unlocked position (even if filled)
+// This allows users to navigate and edit filled tiles when needed
 function stepToNextEmptyUnlocked(){
   const total = totalSolveLength();
-  const start = state.solveIndex;
   let si = state.solveIndex + 1;
   // Search forward for first empty unlocked position
   while(si < total){
     const m = solveIndexToPos(si);
-    if(!m.space && !isLocked(m.wi, m.pos) && (state.entries[m.wi][m.pos]||'') === ''){ 
+    if(!m.space && !isLocked(m.wi, m.pos) && !state.entries[m.wi][m.pos]){ 
       state.solveIndex = si; 
       return true; 
     }
     si++;
   }
-  // No empty position found forward, stay at current or move to next unlocked
+  // No empty position found forward, move to next unlocked (allows editing filled tiles)
   stepRightSkippingSpace();
   return false;
 }
 
 // Helper to move to previous empty unlocked position in solve mode
+// If no empty position exists, falls back to previous unlocked position (even if filled)
+// This allows users to navigate and edit filled tiles when needed
 function stepToPrevEmptyUnlocked(){
-  const start = state.solveIndex;
   let si = state.solveIndex - 1;
   // Search backward for first empty unlocked position
   while(si >= 0){
     const m = solveIndexToPos(si);
-    if(!m.space && !isLocked(m.wi, m.pos) && (state.entries[m.wi][m.pos]||'') === ''){ 
+    if(!m.space && !isLocked(m.wi, m.pos) && !state.entries[m.wi][m.pos]){ 
       state.solveIndex = si; 
       return true; 
     }
     si--;
   }
-  // No empty position found backward, stay at current or move to prev unlocked
+  // No empty position found backward, move to previous unlocked (allows editing filled tiles)
   stepLeftSkippingSpace();
   return false;
 }
